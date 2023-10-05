@@ -1,0 +1,1937 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+
+  <title>Dashboard - BCH Admin Wallet</title>
+  <meta content="Bitcoin Cash Web Wallet built with clientside JavaScript." name="description">
+  <meta content="Bitcoin Cash, JavaScript, Web Wallet" name="keywords">
+
+  <!-- LAST UPDATED - Wed 27 Sep 2023 10:10:43 PM EDT -->
+  
+  <!-- Favicons 
+  <link href="assets/img/favicon.png" rel="icon"> -->
+  <link href="assets/img/bitcoin-cash-circle-icon-192.png" rel="icon">
+  
+  <link href="assets/img/bitcoin-cash-circle-icon-192.png" rel="apple-touch-icon">
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.gstatic.com" rel="preconnect">
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+
+  <!-- CSS Files -->
+  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="assets/css/jquery.dataTables.min.css" rel="stylesheet">
+ 
+
+  <!-- Main CSS File -->
+  <link href="assets/css/style.css" rel="stylesheet">
+<!--
+  * ========================================
+  * Created by KeepBitcoinFree.org for use as a Bitcoin Cash Web3 Wallet - 
+  * Currently using the mainnet-js library & the library hosted locally. There is no backend/server - https://mainnet.cash
+  * All Private Keys are Stored and used locally in the browser. The "webapp" is flatfile using only clientside Javascript. 
+  * There is no server and no database. Only the index.html file is hosted on a server. 
+  *
+  * For now 1 cookie/browser = one user. Keys are stored within the indexDB
+  * Using a private session will create a new wallet each time
+  * TODO: Maybe add ability to create user & log-in. 
+  * TODO: Add functionality to generate PAPER WALLET
+  * TODO: Add functionality to restore from seed
+  * =======================================
+-->
+
+
+
+<!-- TODO: Generate DataTable and Setup Checkboxes only after wallet utxos have been hydrated. Right now it is just waiting 3-4 seconds for each to run. -->
+
+  <!-- CUSTOM SCRIPTS for BITCOIN CASH WALLET -->
+  <script src="assets/js/mainnet-1.1.32.js"></script> <!-- OLD = mainnet-1.1.32.js -->
+  <script src="assets/js/jquery-3.6.4.min.js"></script>
+  <script src="assets/js/jquery.dataTables.min.js"></script>
+
+  <script type="text/javascript">
+      
+      // Global Vars \\
+      
+      // Set USERID. This is used to identify the wallet. A new userid = a new wallet.
+      const userid = 'user:4202215252322';
+      // Create Formatter to format numbers.
+      const US = new Intl.NumberFormat();
+      let thebchPrice = 0;
+     // let depositAddr;
+      
+    document.addEventListener("DOMContentLoaded", async (event) => {
+      globalThis.exports = globalThis.exports || {};
+      Object.assign(globalThis, await __mainnetPromise);
+      
+      // Get and Print Date to console
+      let date = Date.now();
+      console.log('Date is... ' + date);
+      console.log('userid = '+userid);
+      
+      // Creates new/loads existing TESTNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
+      // const tWallet = await TestNetWallet.named(userid);
+      // tWallet.balance = await tWallet.getBalance();
+      
+      // Creates new/loads existing MAINNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
+      const wallet = await Wallet.named(userid);
+      wallet.balance = await wallet.getBalance();
+      
+      // TODO: add functionality to allow user to restore from seed phrase, or WIF private key.
+      // const wallet = await Wallet.fromSeed('.....');
+      //const wallet = await Wallet.fromWIF('.....');
+      // wallet.privateKeyWif
+      // wallet.mnemonic
+      // wallet.derivationPath
+      
+      // Get current wallet Derivation path
+      let derPath = wallet.derivationPath;
+      console.log('DERIVATION PATH FOR WALLET = ' + derPath);
+      document.getElementById("derivation").innerHTML = derPath;
+      
+      // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
+      wallet.utxos = await wallet.getUtxos();
+      // DEBUG console.log('all wallet UTXOs = ' + JSON.stringify(wallet.utxos, null, 4));
+        console.log('Hydrating UTXO Table...');
+        
+        //set utxo length
+        document.getElementById("utxoLen").innerHTML = US.format(wallet.utxos.length) + ' ';
+        
+        // Fill in Datatable with UTXO hydration.
+        var tbody = document.getElementById('tbody');
+
+
+
+    //    var tr1 = "<thead><tr><th scope='col'>TxID</th><th scope='col'>Satoshis</th><th scope='col'>Height</th><th scope='col'>Status</th></tr></thead>";
+     //   tbody.innerHTML = tr1;
+        
+        for (var i = 0; i < wallet.utxos.length; i++) {
+            
+            let confirmed = "<i class='bi bi-info-circle me-1'></i> Pending";
+            let bgclass = 'badge bg-warning';
+            let txid = wallet.utxos[i].txid;
+            let vout = wallet.utxos[i].vout;
+            let satoshis = wallet.utxos[i].satoshis;
+            let height = wallet.utxos[i].height;
+            if(height > 0){
+              confirmed = "<i class='bi bi-check-circle me-1'></i> Confirmed";
+              bgclass = 'badge bg-success';
+              
+            }
+            
+            // Start of Each Row
+            var tr = "<tr><td><input class='coinsum' type='checkbox' value='" + satoshis +  "' name='" + txid + ":" + vout + "'></td>";
+            // onClick='calculateSendTotal()'></td>";
+            
+            //Add in link for txid to block explorer... or to nodebox?
+            let txHashURL = '<a href="https://blockchair.com/bitcoin-cash/transaction/' + txid + '" target="_blank">' + txid + '</a>'
+
+            
+            // Create table rows for data
+            tr += "<td><span style='font-size=10pt;'>" + txHashURL + "</span></td><td>" + US.format(satoshis) + "</td><td>" + US.format(height) + "</td><td class='" + bgclass  + "'>" + confirmed + "</td></tr>";
+            
+            // Must not forget the $ sign */
+            //tr += "<td>" + obj[i].key + "</td>" + "<td>$" + obj[i].value.toString() + "</td></tr>";
+
+            // We add the table row to the table body */
+            tbody.innerHTML += tr;
+        } // END DataTable UTXO HYDRATION
+
+
+        
+      //  Get usd price of 1 BCH to display
+      let bchPrice = await convert(1, "bch", "usd");
+      if(bchPrice){ 
+        document.getElementById("bchprice").innerHTML = bchPrice;
+        thebchPrice = bchPrice;
+      }
+
+      // MAINNET WALLET LOGIC after wallet has been loaded/created.
+      if(wallet){
+        let notifLength = 0;
+
+        console.log('Mainnet BCH wallet created... ', wallet);
+
+        // Display all balance info - BCH, USD & SATS
+        document.getElementById('bal').innerHTML = wallet.balance.bch + ' BCH';
+        document.getElementById('balusd').innerHTML = US.format(wallet.balance.usd);
+        document.getElementById('sats').innerHTML = US.format(wallet.balance.sat);
+        // Get Network Info and Splice to Uppercase.
+        let network = wallet.network;
+        wallet.network = network.charAt(0).toUpperCase() + network.slice(1);
+        
+       // console.log('wallet.getDepositAddress() = ' + wallet.getDepositAddress());
+        
+        // Add Deposit Addr QR code to HTML.
+        document.querySelector('#deposit').src = wallet.getDepositQr().src;
+        
+        // Use derivation path to get PubKeys to create additional recieve addresses (if needed?)
+        //await wallet.getXPubKeys();
+      
+        // // use PubKeys to get more Addresses and then add to HTML
+        // let addresses = await Mainnet.getAddrsByXpubKey(wallet.parentXPubKey,"0/0",5);
+        // // console.log('adresses = ', addresses);
+
+        // let addressesHTML;
+        // let x = 0;
+
+        // addresses.forEach( function(address){
+        //   console.log(' address = ', address);
+        //   if( address && x > 0){
+        //     if(x == 1){
+        //       addressesHTML = address + '<br />';
+
+        //     }else{
+        //       addressesHTML += address + '<br />';
+        //     }
+        //   }
+        //   x++;
+        // })
+        // document.getElementById("addresses").innerHTML = addressesHTML;
+        
+        // Add Wallet Cash Address to HTML
+        document.getElementById("cashaddr").innerHTML = wallet.cashaddr + '  <img id="copytext" width="15px" src="assets/img/copytext.jpg" onClick="copyText()">';
+        document.getElementById("cashaddr2").innerHTML = wallet.cashaddr;
+        // Add Mnemonic and Network to HTML
+        document.getElementById("mnemonic").innerHTML = wallet.mnemonic;      
+        document.getElementById("network").innerHTML = wallet.network;
+        
+       // Watch Main Deposit Addr for any new incoming transactions // IF IT ISN'T WORKING REFRESH THE PAGE.
+       console.log('watching address for new txHash');
+
+       wallet.watchAddress((txHash) => {
+          console.log('New Transaction recieved. TX HASH = ' + txHash);
+          // Should watch only for INCOMING TXs.
+
+          // window.alert('New unspent transaction output recieved. TX HASH = ' + txHash)
+          
+          // Wallet does not detect utxos on addresses generated, other than the first, or main deposit address.
+          // XXXX: Get New Deposit Address when a tx is detected.
+              // XXXX: Update HTML with new deposit addr
+          
+          // Get wallet Derivation path
+          //let derPath = wallet.derivationPath;
+          //console.log('DERIVATION PATH FOR WALLET = ' + derPath);
+        
+          // User derivation path to get PubKeys
+          // await wallet.getXPubKeys()
+        
+          // use PubKeys to get more Addrs
+          // await Mainnet.getAddrsByXpubKey("tpubDDfazrbXYF84Xxq7XqnakjAwVyCFVUGEWrsuQY3VqzpV8QgH2X2cczoZbEAyMdRmcra4nLhf67vEZ1jSnQ2KKcq5USoTGtFGaVTsXx7XsG7","0/0",5)
+
+
+          // ADD NOTIFICATION
+          createNotif(txHash);
+
+
+          //Show the UtxoModal & refresh bal when it is closed by user
+          document.getElementById('modalbtn').click();
+
+       });
+
+      // never cancelWatch. Always keep Watching as long as page is open
+
+      // const cancelWatch = wallet.watchAddressTransactions((tx) => {
+      //     if (tx.hash === someHash) {
+      //       cancelWatch();
+      //     }
+      // });
+
+
+          // Get wallet Derivation path
+          //let derPath = wallet.derivationPath;
+          //console.log('DERIVATION PATH FOR WALLET = ' + derPath);
+        
+          // User derivation path to get PubKeys
+          // await wallet.getXPubKeys()
+        
+          // use PubKeys to get more Addrs
+          // await Mainnet.getAddrsByXpubKey("tpubDDfazrbXYF84Xxq7XqnakjAwVyCFVUGEWrsuQY3VqzpV8QgH2X2cczoZbEAyMdRmcra4nLhf67vEZ1jSnQ2KKcq5USoTGtFGaVTsXx7XsG7","0/0",5)
+
+      } // END if(wallet){}
+    }); // END CONTENT LOADED LISTENER
+
+    // GENERAL CUSTOM FUNCTIONS
+    
+    
+    // Function to add event listener to SEND FORM for MANUAL bch amount changes - to then update the USD value being sent. This would allow the USD to track manual changes to send bal made by user.
+    // This is broken because it interferes with the current checkbox change refresh // Might come back to it.
+    //var sendTitleInput = document.getElementById('send-total');
+    //sendTitleInput.addEventListener("change", function(){
+      ////TODO: recalcuate the USD value and then set that.
+        //var totalUsd = document.getElementById('send-totalusd'),
+        //totalToSend = sendTitleInput.value,
+        //totalUsdVal = US.format(totalToSend * thebchPrice);
+        //// Showing user the totals
+        //totalUsd.innerHTML = totalUsdVal;
+        //// Debug console log
+        //console.log('total.value = '+ total.value);
+								
+      //});
+
+    // FUNCTION TO WATCH UTXO CHECKBOXES AND RE-CALC TOTALS BASED ON INPUT CHANGES
+ //  function calculateSendTotal() {
+  setTimeout( function(){   
+     // console.log('This ting happened 4 seconds later...');
+      var inputs = document.getElementsByClassName('coinsum'),
+      total  = document.getElementById('send-total'),
+      totalUsd = document.getElementById('send-totalusd');
+      
+      // when sendmax checkbox is checked, select all coinsum inputs.
+      var inputMax = document.getElementById('sendmax');
+      inputMax.onchange = function() {
+
+
+        for (var i=0; i < inputs.length; i++) {
+          console.log('Input ' + i + '. input.checked = ' + inputs[i].checked);
+							      
+          if(inputMax.checked === true){
+          // if it's not already selected, click the checkbox.
+            if(inputs[i].checked === false){
+              inputs[i].click();
+            }
+          }else{
+            // inputMax was unselected.
+            // if it's IS already selected, click the checkbox to unselect.
+            if(inputs[i].checked === true){
+              inputs[i].click();
+            }
+          }
+        } // END SENDMAX FOR
+      }
+      
+      console.log('INPUTS.length = ' + inputs.length);
+							
+      for (var i=0; i < inputs.length; i++) {
+        // Everytime one of the checkboxes are changed (clicked/unclicked) this funtion is run. 
+        // TODO: For some reason, after modal close and balance refresh function, this no longer works.
+        inputs[i].onchange = function() {
+            //if(inputs[i].checked = false){
+              //inputMax.click();
+            //}
+            // Recaclulating totals
+            var checkedUtxosArray = new Array();
+            console.log('inputs have changed, caclulating coinsum totals ');
+            var add = this.value * (this.checked ? 1 : -1);
+            // Convert add (in satoshis) to BCH
+            add = (add / 100000000)
+            
+            //add.toFixed(8)
+            console.log('add = ' + add);
+            var totalValue = (parseFloat(total.value) + add).toFixed(8);
+           // send-total-amount.value = totalValue;
+            total.value = totalValue;
+            
+            //TODO: move bchPrice grab to here to always get latest price. Currently using price that was generated on page load.
+            var totalUsdVal = US.format(total.value * thebchPrice)
+            // Showing user the totals
+            totalUsd.innerHTML = totalUsdVal;
+            // Debug console log
+            console.log('total.value = '+ total.value);
+								
+            // TODO: Create a separate array of TXIDs and add this info into the SEND FORM!!! *****
+            
+            
+           // var sendTxidList = document.getElementsByClassName('txidsum');
+          }
+        }
+      }, 5000);
+    
+    // Function to allow user to Delete their bitcoincash wallet (and start anew)
+    function deleteWallet() {
+
+      let databaseName = "bitcoincash";
+
+        // TODO: first warn user about deleting wallet & ask them to back up seed phrase.
+        
+        if (confirm('Are you sure you want to DELETE THIS BITCOIN CASH WALLET? This cannot be undone and a new wallet will be created upon page reload. Make sure to save the Mnemonic seed phrase first.')) {
+          // Save it!
+          var req = indexedDB.deleteDatabase(databaseName);
+          req.onsuccess = function () {
+              console.log("Deleted Bitcoin Cash wallet successfully");
+              alert('Deleted Bitcoin Cash wallet successfully. Please reload the page to create a new wallet');
+          };
+          req.onerror = function () {
+              console.log("Couldn't delete database for BCH wallet");
+          };
+          req.onblocked = function () {
+              console.log("Couldn't delete database for BCH wallet due to the operation being blocked.");
+          };
+          
+        } else {
+          // Do nothing!
+          console.log('Wallet was not deleted.');
+        }
+        // TODO: send back error/success msg to HTML - or just FORCE RELOAD
+
+    }
+
+    // Where el is the DOM element you'd like to test for visibility
+    function isHidden(el) {
+        return (el.offsetParent === null)
+    }
+
+    // TODO: onChange for send amount input - re-calc the USD value. (instead of doing it manually within utxo selection - coinsum)
+
+    // *** Function to SEND BCH ***
+    // #
+    // # https://mainnet.cash/tutorial/#sending-money
+    // #
+    async function sendBCH() {
+
+      console.log('SendBCH function kicked off...');
+
+      // Check for errors upfront and return error if exists.
+      console.log('checking for invalid feedback..');
+      var invalidInputs = document.getElementsByClassName("invalid-feedback");
+      var thereareerrors = false;
+
+        for (var i=0; i < invalidInputs.length; i++) {
+
+          if(!isHidden(invalidInputs[i])) {
+            thereareerrors = true;
+          }
+        }
+
+        console.log('Are there errors? ' + thereareerrors);
+
+      if(thereareerrors == false){
+        // there are no errors, proceed with SEND
+        console.log('There are no errors, proceeding with send');
+
+        // Show loader GIF
+        document.getElementById("loader").style.display = "inline";
+
+          // Get variables for sending, trim whitespace on sendtoAddr. 
+          let sendToAddr = document.getElementById("sendtoaddress").value.trim();
+          let sendTotal = document.getElementById("send-total").value;
+          let sendMax = document.getElementById("sendmax");
+
+          console.log('SendMax is checked? ' + sendMax.checked);
+          
+          // Creates new/loads existing MAINNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
+          const wallet = await Wallet.named(userid);
+
+          // if Sendmax was checked, lets just send all funds to specified address.
+          if(sendMax.checked){
+            console.log('SendMax was checked. Sending all funds to address provided.');
+
+            try{
+
+              const txData = await wallet.sendMax(sendToAddr);
+              console.log(txData);
+
+              // if it returns a successful txData obj, lets pass this info back to HTML
+              if(txData){
+                // add to HTML
+                console.log('txData = ' + txData);
+                let txHash = txData.txId;
+
+                let txDataHTML = 'Transaction sent successfully. <br />Tx Hash => <a href="https://blockchair.com/bitcoin-cash/transaction/' + txHash + '" target="_blank">' + txHash + '</a>. <br /><br />';
+
+                let txDataSpan = document.getElementById("txdata");
+                txDataSpan.style.display = "inline";
+                txDataSpan.innerHTML = txDataHTML;
+
+                // Hide loader GIF
+                document.getElementById("loader").style.display = "none";
+
+                // Display all balance info with the returned balance - BCH, USD & SATS
+                document.getElementById('bal').innerHTML = txData.balance.bch + ' BCH';
+                document.getElementById('balusd').innerHTML = US.format(txData.balance.usd);
+                document.getElementById('sats').innerHTML = US.format(txData.balance.sat);
+
+                // Reset send BCH form
+                document.getElementById("resetSendForm").click();
+                // TODO: reset all checkboxes and values.
+                
+              }
+
+            }catch(error){
+              // set error message in HTML
+              error = '<br />' + error;
+              document.getElementById('send-error').innerHTML = error;
+
+              // Hide the loader GIF again
+              document.getElementById("loader").style.display = "none";
+            }
+
+
+          }else{ //sendMax wasn't checked.
+            console.log('SendMax wasnt checked. Checking for utxo selections.');
+
+            //get utxo selection info
+            console.log('Getting utxo selection info from coinsum inputs');
+            var inputs = document.getElementsByClassName('coinsum');
+            let inputArray = new Array();
+
+            for (var i=0; i < inputs.length; i++) {
+              // if input is selected/checked, add it to our send inputArray
+              if(inputs[i].checked){
+                inputArray.push(inputs[i].name);
+              }
+            }
+
+
+            // subtract a standard fee amnt from total so that the change can be used
+            // TODO: For some reason, this works to pay the send fee from the selected input (for standard sized txs) BUT for some 
+            // reason, it is including other inputs in the same address (sending them back to same address). I don't know if 
+            // this is a feature, a bug, or an issue with my "options" params.
+            let fees = 0.00000361;
+            sendTotal -= fees;
+
+            var sendRequestOptions;
+            
+            // Check if any utxo inputs (checkboxes) have been selected to be sent
+            if(inputArray.length > 0){
+              console.log('inputArray of selected utxos exists, sending with utxo selection...');
+              console.log('selected inputArray = ' + inputArray);
+              // Use sendRequestOptions with selection utxo array and fees paid by the change
+              sendRequestOptions = { utxoIds: inputArray }; //, feePaidBy: "change"
+            }
+
+            if(sendRequestOptions){
+              console.log('sendRequestOptions is not NULL. This means there are custom params for the send (utxo selections)');
+              // TODO: I could try doing the advanced way to see if that works better?
+              // const encodedTransaction = await wallet.encodeTransaction(
+              //  // requests, // send requests as in `send` method
+              //   false, // discard change
+              //   sendRequestOptions // options as described above
+              // );
+
+              // const txId = await wallet.submitTransaction(
+              //   encodedTransaction,
+              //   awaitTransactionPropagation // as in options.awaitTransactionPropagation
+              // );
+
+
+                
+
+              // clear any existing errors
+              document.getElementById('send-error').innerHTML = null;
+
+              try{
+                console.log('trying NORMAL SEND with options: sendRequestOptions');
+                
+                //var requests = 
+                  //{
+                    //cashaddr: sendToAddr,
+                    //value: Number(sendTotal),
+                    //unit: 'bch',
+                    //utxoIds: inputArray
+                  //};
+                  
+                  //console.log(requests);
+                  //console.log(sendRequestOptions);
+                  
+                const txData = await wallet.send([
+                  {
+                    cashaddr: sendToAddr,
+                    value: Number(sendTotal),
+                    unit: 'bch',
+                    options: sendRequestOptions
+                  }
+                ]); // end txData
+                
+                // Trying Advanced Send Technique
+                //const encodedTransaction = await wallet.encodeTransaction(
+                  //requests, // send requests as in `send` method
+                  //false, // discard change
+                  //sendRequestOptions // options as described above
+                //);
+
+                //const txId = await wallet.submitTransaction(
+                  //encodedTransaction,
+                  //awaitTransactionPropagation // as in options.awaitTransactionPropagation
+                //);
+
+                // if it returns a successful txData obj, lets pass this info back to HTML
+                if(txData){
+                  // add to HTML
+                 // console.log('txData = ' + txData);
+                  let txHash = txData.txId;
+
+                  let txDataHTML = 'Transaction sent successfully. <br />Tx Hash => <a href="https://blockchair.com/bitcoin-cash/transaction/' + txHash + '" target="_blank">' + txHash + '</a>. <br /><br />';
+
+                  let txDataSpan = document.getElementById("txdata");
+                  txDataSpan.innerHTML = txDataHTML;
+                  txDataSpan.style.display = "block";
+                  // TODO: Create a Modal or alert for notification of tx sent info.
+
+                // Hide loader GIF
+                document.getElementById("loader").style.display = "none";
+
+                  // Display all balance info with the returned balance - BCH, USD & SATS
+                  document.getElementById('bal').innerHTML = txData.balance.bch + ' BCH';
+                  document.getElementById('balusd').innerHTML = US.format(txData.balance.usd);
+                  document.getElementById('sats').innerHTML = US.format(txData.balance.sat);
+
+                  // Reset send BCH form
+                  document.getElementById("resetSendForm").click();
+                }
+
+              }catch(error){
+              // set error in HTML
+              error = '<br />' + error;
+              document.getElementById('send-error').innerHTML = error;
+
+              // Hide loader GIF
+              document.getElementById("loader").style.display = "none";
+            }
+
+
+
+            }else{
+              console.log('SendRequestOptions is NULL. This means there was no utxo selection. This could mean they manually entered an amount to send (in BCH).');
+              
+              // clear any errors
+              document.getElementById('send-error').innerHTML = null;
+
+              try {
+                  console.log('continuing with a SIMPLE SEND of ' + Number(sendTotal) + ' to ' + sendToAddr + '.');
+                  // SIMPLE SEND with just an address and the amount in BCH.
+                 const txData = await wallet.send([
+                  {
+                    cashaddr: sendToAddr,
+                    value: Number(sendTotal),
+                    unit: 'bch'
+                  //  sendRequestOptions
+                  }
+                ]); // end txData
+
+                // if it returns a successful txData obj, lets pass this on to the user
+                if(txData){
+                  // add to HTML
+                  console.log('txData = ' + txData);
+                  let txHash = txData.txId;
+
+                  let txDataHTML = 'Transaction sent successfully. <br />Tx Hash => <a href="https://blockchair.com/bitcoin-cash/transaction/' + txHash + '" target="_blank">' + txHash + '</a>. <br /><br />';
+
+                  let txDataSpan = document.getElementById("txdata");
+                  txDataSpan.innerHTML = txDataHTML;
+                  // TODO: Create a Modal for notification of this info.
+
+                  // Hide loader GIF
+                  document.getElementById("loader").style.display = "none";
+
+                  // Display all balance info with the returned balance - BCH, USD & SATS
+                  document.getElementById('bal').innerHTML = txData.balance.bch + ' BCH';
+                  document.getElementById('balusd').innerHTML = US.format(txData.balance.usd);
+                  document.getElementById('sats').innerHTML = US.format(txData.balance.sat);
+
+                  // Reset send BCH form
+                  document.getElementById("resetSendForm").click();
+
+                  //
+                } // end if(txData)
+
+              }catch(error){ // catch send error
+                // set error in HTML
+                error = '<br />' + error;
+                document.getElementById('send-error').innerHTML = error;
+
+                // Hide loader GIF
+                document.getElementById("loader").style.display = "none";
+
+              }
+
+            } // end else (no utxo selection send)
+          } // End else for SendMax
+
+        }else{ // there are errors. Tell user to fix the errors.
+
+              document.getElementById('send-error').innerHTML = '<br />Please fix the errors.';
+
+        } // END IF THEREAREERRORS = FALSE;
+
+    }
+    
+    // Custom function to enable/disable dark mode
+    function toggleDarkMode() {
+      console.log('Toggling DARK mode');
+      let currentBackground = document.getElementById('main').style.background;
+      // already D4RK?
+      if(currentBackground === "black"){
+          // make it LIGHT
+          document.getElementById('main').style.background = "none";
+        document.getElementById('header').style.background = "white";
+        document.getElementById('footer').style.background = "white";
+        document.getElementById('sidebar').style.background = "white";
+        document.getElementById('utxoTable').tHead.style.background = "none";
+
+
+          //document.html.style.color = "white !important;"
+          
+          var sideClasses = document.getElementsByClassName("sidebar");
+        let sidebar = sideClasses[0]
+        sidebar.style.background = "white";
+        
+        var cardbodys = document.getElementsByClassName("card-body");
+          for (var i=0; i < cardbodys.length; i++) {
+            cardbodys[i].style.background = "white";
+          }
+          
+          var infoCards = document.getElementsByClassName("info-card");
+          for (var i=0; i < infoCards.length; i++) {
+            infoCards[i].style.background = "white";
+          }
+          
+          var cardicons = document.getElementsByClassName("card-icon");
+          for (var i=0; i < cardicons.length; i++) {
+            cardicons[i].style.background = "white";
+          }
+          
+        var navLinks = document.getElementsByClassName("nav-link");
+          for (var i=0; i < navLinks.length; i++) {
+            navLinks[i].style.background = "white";
+          }
+          
+                    
+        var modals = document.getElementsByClassName("modal-content");
+          for (var i=0; i < modals.length; i++) {
+            modals[i].style.background = "white";
+          }
+                                          
+        var accordians = document.getElementsByClassName("accordion-item");
+          for (var i=0; i < accordians.length; i++) {
+            accordians[i].style.background = "white";
+          }
+          
+        var dropdowns = document.getElementsByClassName("dropdown-menu");
+          for (var i=0; i < dropdowns.length; i++) {
+            dropdowns[i].style.background = "white";
+          }
+          
+          // make text BL4CK
+          var all = document.getElementsByTagName("*");
+
+          for (var i=0, max=all.length; i < max; i++) {
+           all[i].style.color = "black";
+          }
+          
+          document.getElementById('faq-modal').style.background = "white";
+          
+        var accordianButtons = document.getElementsByClassName("accordion-button");
+          for (var i=0; i < accordianButtons.length; i++) {
+            accordianButtons[i].style.color = "black";
+          }
+          
+          // Color links again
+          colorLinks("#989898"); 
+          
+          // make BCH price green again
+          document.getElementById('bchprice').style.color = "#198754"
+          
+      }else{
+          // It is Light, we must..
+          // make it D4RK!
+        document.getElementById('main').style.background = "black";
+        document.getElementById('header').style.background = "black";
+        document.getElementById('footer').style.background = "black";
+        document.getElementById('sidebar').style.background = "black";
+
+        // make utxo table head dark
+        document.getElementById("utxoTable").tHead.style.background = "black";
+
+
+        //document.getElementById('main').style.background = "black";
+        var sideClasses = document.getElementsByClassName("sidebar");
+        let sidebar = sideClasses[0]
+        sidebar.style.background = "black";
+        
+        var cardbodys = document.getElementsByClassName("card-body");
+          for (var i=0; i < cardbodys.length; i++) {
+            cardbodys[i].style.background = "#5b5b5b";
+          }
+          
+        var infoCards = document.getElementsByClassName("info-card");
+          for (var i=0; i < infoCards.length; i++) {
+            infoCards[i].style.background = "#5b5b5b";
+          }
+          
+        var cardicons = document.getElementsByClassName("card-icon");
+          for (var i=0; i < cardicons.length; i++) {
+            cardicons[i].style.background = "black";
+          }
+          
+        var navLinks = document.getElementsByClassName("nav-link");
+          for (var i=0; i < navLinks.length; i++) {
+            navLinks[i].style.background = "black";
+          }
+          
+        var modals = document.getElementsByClassName("modal-content");
+          for (var i=0; i < modals.length; i++) {
+            modals[i].style.background = "black";
+          }
+          
+                    
+        var accordians = document.getElementsByClassName("accordion-item");
+          for (var i=0; i < accordians.length; i++) {
+            accordians[i].style.background = "black";
+          }
+          
+        var dropdowns = document.getElementsByClassName("dropdown-menu");
+          for (var i=0; i < dropdowns.length; i++) {
+            dropdowns[i].style.background = "black";
+          }
+          
+          
+          
+          
+          document.getElementById('faq-modal').style.background = "black";
+          
+        var accordianButtons = document.getElementsByClassName("accordion-button");
+          for (var i=0; i < accordianButtons.length; i++) {
+            accordianButtons[i].style.color = "white";
+          }
+
+          // make all text white globally
+          var all = document.getElementsByTagName("*");
+
+          for (var i=0, max=all.length; i < max; i++) {
+            
+           all[i].style.color = "white";
+          }
+          
+          document.getElementById("sendtoaddress").style.color = "black";
+          document.getElementById("send-total").style.color = "black";
+          
+          var allElements = document.getElementsByTagName('label');
+          for (var i = 0, n = allElements.length; i < n; i++)
+          {
+            allElements[i].style.color = "grey";
+          }
+          var feedbacks = document.getElementsByClassName("invalid-feedback");
+          for (var i=0; i < feedbacks.length; i++) {
+            feedbacks[i].style.color = "#ff6d6d";
+          }
+          
+          // Color Links again
+          colorLinks("#989898");      
+          
+          // make BCH price green again
+          document.getElementById('bchprice').style.color = "#198754"; 
+      }
+    }
+    
+  // color links with javascript
+function colorLinks(hex)
+          {
+              var links = document.getElementsByTagName("a");
+              for(var i=0;i<links.length;i++)
+              {
+                  if(links[i].href)
+                  {
+                      links[i].style.color = hex;  
+                  }
+              }  
+          }
+
+    
+    // show hidden mnemonic button
+    function showMnemonic() {
+      console.log('showing mnemonic');
+      document.getElementById("mnemonic").style.all = "initial";
+      document.getElementById("lock-open").style.display = "inline";
+      document.getElementById("lock").style.display = "none";
+
+      //show the hide button
+      document.getElementById("hideMnemonicMenu").style.display = "inline";
+      document.getElementById("showMnemonicMenu").style.display = "none";
+
+      // filter: blur(50%);
+    }
+
+    // show hidden mnemonic button
+    function hideMnemonic() {
+      console.log('hiding mnemonic');
+      document.getElementById("mnemonic").style = "filter: blur(50%);color: transparent;text-shadow: 0 0 5px rgba(0,0,0,0.5);";
+      document.getElementById("lock-open").style.display = "none";
+      document.getElementById("lock").style.display = "inline";
+
+      //show the hide button
+      document.getElementById("showMnemonicMenu").style.display = "inline";
+      document.getElementById("hideMnemonicMenu").style.display = "none";
+
+      // filter: blur(50%);
+    }
+
+    function hideMnemonicTab(){ 
+      document.getElementById("theMnemonic").style.display = "none" 
+    }
+
+    function showMnemonicTab(){ 
+      document.getElementById("theMnemonic").style.display = "inline" 
+    }
+    
+
+    // TODO: RUN THIS IF THE MODAL IS CLOSED IN ANY WAY. (Not just the "Close" button)
+    async function reloadBal() {
+      console.log('Reload Balance (& UTXOs) func kicked off...');
+
+      // Get variables for sending and reset all values.
+      let sendToAddr = document.getElementById("sendtoaddress").value;
+      let sendTotal = document.getElementById("send-total").value;
+      let sendMax = document.getElementById("sendmax");
+
+      sendToAddr = null;
+      sendTotal = null;
+      sendMax.checked = false;
+
+      // Creates new/loads existing MAINNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
+      const wallet = await Wallet.named(userid);
+      wallet.balance = await wallet.getBalance();
+
+        // Display all balance info - BCH, USD & SATS
+        document.getElementById('bal').innerHTML = wallet.balance.bch + ' BCH';
+        document.getElementById('balusd').innerHTML = US.format(wallet.balance.usd);
+        document.getElementById('sats').innerHTML = US.format(wallet.balance.sat);
+
+      // After Balance Reload, also reload UTXOs
+      // Get all UTXOs for wallet. Use this to add UTXO selection to wallet. ** CREATE DATA TABLE WITH THIS INFO.
+      wallet.utxos = await wallet.getUtxos();
+      // DEBUG console.log('all wallet UTXOs = ' + JSON.stringify(wallet.utxos, null, 4));
+        console.log('RE-Hydrating UTXO Table...');
+        
+        //set utxo length
+        document.getElementById("utxoLen").innerHTML = US.format(wallet.utxos.length) + ' ';
+        
+         // Hydrate Datatable with UTXO data.
+        var tbody = document.getElementById('tbody');
+        // trying to clear the table first.
+        for(var i = 0;i<tbody.rows.length;){
+            tbody.deleteRow(i);
+        }
+
+       // var tr1 = "";
+      //  tbody.innerHTML = tr1;
+        
+        for (var i = 0; i < wallet.utxos.length; i++) {
+          //  var tr = "<tr>";
+  
+            let confirmed = "Pending";
+            let bgclass = 'badge bg-warning';
+            let txid = wallet.utxos[i].txid;
+            let satoshis = wallet.utxos[i].satoshis;
+            let vout = wallet.utxos[i].vout;
+            let height = wallet.utxos[i].height;
+            if(height > 0){
+              confirmed = "Confirmed";
+              bgclass = 'badge bg-success';
+            }
+            
+            // Start of Each Row
+            var tr = "<tr><td><input class='coinsum' type='checkbox' value='" + satoshis +  "' name='" + txid + ":" + vout + "'></td>";                       
+            //Add in link for txid to block explorer... or to nodebox?
+            let txHashURL = '<a href="https://blockchair.com/bitcoin-cash/transaction/' + txid + '" target="_blank">' + txid + '</a>'
+
+            // Create table rows for data
+            tr += "<td><span style='font-size=10pt;'>" + txHashURL + "</span></td><td>" + US.format(satoshis) + "</td><td>" + US.format(height) + "</td><td class='" + bgclass  + "'>" + confirmed + "</td></tr>";
+
+            // Must not forget the $ sign */
+            //tr += "<td>" + obj[i].key + "</td>" + "<td>$" + obj[i].value.toString() + "</td></tr>";
+
+            // We add the table row to the table body */
+            tbody.innerHTML += tr;
+        }
+
+
+    } // end reloadBal()
+
+    function getNewDepositAddr() {
+      // TODO: add this funcitonality when mainnet.js can scan/use other addresses for funds. Right now it's only the one address that you can send/recieve on.
+
+    }
+          // ADD NOTIFICATION'
+          let notifLength2 = 0;
+    function createNotif(txHash) {
+
+          notifLength2++;
+
+          document.getElementById('notifLength').innerHTML = notifLength2;
+          document.getElementById('notifLength2').innerHTML = notifLength2;
+
+
+
+                    // test txHash
+          //let txHash = "234c9273s47923849832b84923874928739487292s38a47223423423a834";
+
+          let notifications = 
+          '<li class="notification-item"  style="overflow:scroll;"> <i class="bi bi-exclamation-circle text-warning"></i><div> <h4>New TX Detected!</h4> <p>TXID/Hash is ' + txHash + '</p> <p><a href="https://blockchair.com/bitcoin-cash/transaction/' + txHash + '" target="_blank">View in Explorer</a></p> </div> </li> <li> <hr class="dropdown-divider"> </li>';
+          document.getElementById('notifications').innerHTML += notifications;
+  
+
+          let txHashURL = '<a href="https://blockchair.com/bitcoin-cash/transaction/' + txHash + '" target="_blank">' + txHash + '</a>'
+
+          document.getElementById('txhash').innerHTML = txHashURL;
+
+
+    }
+
+    // click the faq button
+    function faq() { document.getElementById('faqmodalbtn').click(); }
+    
+    // copy function
+    function copyText() {
+      let text = document.getElementById('cashaddr').innerText;
+      console.log('text to copy is... ' + text);
+      navigator.clipboard.writeText(text);
+    }
+    
+
+
+  
+  // Easy selector helper function
+   
+  const select = (el, all = false) => {
+    el = el.trim()
+    if (all) {
+      return [...document.querySelectorAll(el)]
+    } else {
+      return document.querySelector(el)
+    }
+  }
+  
+    
+   // Easy event listener function
+  const on = (type, el, listener, all = false) => {
+    if (all) {
+      select(el, all).forEach(e => e.addEventListener(type, listener))
+    } else {
+      select(el, all).addEventListener(type, listener)
+    }
+  }
+
+  
+   // Easy on scroll event listener 
+  const onscroll = (el, listener) => {
+    el.addEventListener('scroll', listener)
+  }
+  
+    // Sidebar Toggle
+  if (select('.toggle-sidebar-btn')) {
+    on('click', '.toggle-sidebar-btn', function(e) {
+      select('body').classList.toggle('toggle-sidebar')
+    })
+  }
+  
+   // Search bar toggle
+  if (select('.search-bar-toggle')) {
+    on('click', '.search-bar-toggle', function(e) {
+      select('.search-bar').classList.toggle('search-bar-show')
+    })
+  }
+
+
+   //Navbar links active state on scroll
+  let navbarlinks = select('#navbar .scrollto', true)
+  const navbarlinksActive = () => {
+    let position = window.scrollY + 200
+    navbarlinks.forEach(navbarlink => {
+      if (!navbarlink.hash) return
+      let section = select(navbarlink.hash)
+      if (!section) return
+      if (position >= section.offsetTop && position <= (section.offsetTop + section.offsetHeight)) {
+        navbarlink.classList.add('active')
+      } else {
+        navbarlink.classList.remove('active')
+      }
+    })
+  }
+  
+  window.addEventListener('load', navbarlinksActive)
+  onscroll(document, navbarlinksActive)
+ 
+   //. Toggle .header-scrolled class to #header when page is scrolled
+  let selectHeader = select('#header')
+  if (selectHeader) {
+    const headerScrolled = () => {
+      if (window.scrollY > 100) {
+        selectHeader.classList.add('header-scrolled')
+      } else {
+        selectHeader.classList.remove('header-scrolled')
+      }
+    }
+    window.addEventListener('load', headerScrolled)
+    onscroll(document, headerScrolled)
+  }
+
+
+   // Back to top button
+  let backtotop = select('.back-to-top')
+  if (backtotop) {
+    const toggleBacktotop = () => {
+      if (window.scrollY > 100) {
+        backtotop.classList.add('active')
+      } else {
+        backtotop.classList.remove('active')
+      }
+    }
+    window.addEventListener('load', toggleBacktotop)
+    onscroll(document, toggleBacktotop)
+  }
+
+  
+  
+
+  const copyTextOld = async () => {
+    try {
+      let text = document.getElementById('cashaddr').innerText;
+      await navigator.clipboard.writeText(text);
+      console.log('Bitcoin Cash address copied to clipboard');
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+    }
+  }
+
+  </script>
+
+  <script type="text/javascript">
+    $(document).ready(function(){
+      //jQuery
+      // Intantiate utxo DataTable after 2 seconds to allow UTXO hydration
+      setTimeout(function(){
+        let table = new DataTable('#utxoTable');
+        $(".dataTables_empty").css("display", "none");
+      }, 3000);
+
+    });
+
+
+  </script>
+
+</head>
+
+<body>
+
+  <!-- ======= Header ======= -->
+  <header id="header" class="header fixed-top d-flex align-items-center">
+
+    <div class="d-flex align-items-center justify-content-between">
+      <a href="index.html" class="logo d-flex align-items-center">
+        <img src="assets/img/logo.png" alt="">
+        <span class="d-none d-lg-block">BCH Admin</span>
+      </a>
+      <i class="bi bi-list toggle-sidebar-btn"></i>
+    </div><!-- End Logo -->
+
+    <!-- <div class="search-bar">
+      <form class="search-form d-flex align-items-center" method="POST" action="#">
+        <input type="text" name="query" placeholder="Search" title="Enter search keyword">
+        <button type="submit" title="Search"><i class="bi bi-search"></i></button>
+      </form>
+    </div> -->
+
+    <nav class="header-nav ms-auto">
+      <ul class="d-flex align-items-center">
+
+        <li class="nav-item dropdown" style="padding-right:20px">
+          <label class="switch"> <span style="font-size:10pt"></span>
+            <input  type="checkbox" onClick="toggleDarkMode()" >
+            <span class="slider"></span>
+           </label>
+           <!-- <i class="bi bi-search"></i> -->
+          </a>
+        </li><!-- End Search Icon-->
+
+        <li class="nav-item dropdown">
+
+          <a class="nav-link nav-icon" data-bs-toggle="dropdown">
+            <i class="bi bi-bell"></i>
+            <span id="notifLength" class="badge bg-primary badge-number">0</span>
+          </a><!-- End Notification Icon  overflow-x: scroll;   -->
+          <ul id="notifications" class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications" style="word-wrap:break-word;" >
+            <li class="dropdown-header">
+              You have <span id="notifLength2" >0</span> new notifications
+             <!-- <a href="#"><span class="badge rounded-pill bg-primary p-2 ms-2">View all</span></a> -->
+            </li>
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+
+          
+<!--
+   <li class="notification-item"> <i class="bi bi-exclamation-circle text-warning"></i><div> <h4>Lorem Ipsum</h4> <p>Quae dolorem earum veritatis oditseno</p> <p>30 min. ago</p> </div> </li> <li> <hr class="dropdown-divider"> </li>
+
+            <li class="notification-item">
+              <i class="bi bi-x-circle text-danger"></i>
+              <div>
+                <h4>Atque rerum nesciunt</h4>
+                <p>Quae dolorem earum veritatis oditseno</p>
+                <p>1 hr. ago</p>
+              </div>
+            </li>
+
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+
+            <li class="notification-item">
+              <i class="bi bi-check-circle text-success"></i>
+              <div>
+                <h4>Sit rerum fuga</h4>
+                <p>Quae dolorem earum veritatis oditseno</p>
+                <p>2 hrs. ago</p>
+              </div>
+            </li>
+
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+
+            <li class="notification-item">
+              <i class="bi bi-info-circle text-primary"></i>
+              <div>
+                <h4>Dicta reprehenderit</h4>
+                <p>Quae dolorem earum veritatis oditseno</p>
+                <p>4 hrs. ago</p>
+              </div>
+            </li>
+
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+            <li class="dropdown-footer">
+              <a href="#">Show all notifications</a>
+            </li>
+--> 
+          </ul><!-- End Notification Dropdown Items -->
+
+        </li><!-- End Notification Nav -->
+
+        
+
+        <li class="nav-item dropdown pe-3">
+
+          <a class="nav-link nav-profile d-flex align-items-center pe-0" data-bs-toggle="dropdown">
+            <img src="assets/img/AI_ART_Satoshi_psychedelic.jpeg" alt="Profile" class="rounded-circle">
+            <span class="d-none d-md-block dropdown-toggle ps-2">S. Nakamoto</span>
+          </a><!-- End Profile Iamge Icon -->
+
+          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
+            <li class="dropdown-header">
+              <h6>Satoshi Nakamoto</h6>
+              <span>Blockchain Developer</span>
+            </li>
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+
+         <!--   <li>
+              <a class="dropdown-item d-flex align-items-center" href="users-profile.html">
+                <i class="bi bi-person"></i>
+                <span>My Profile</span>
+              </a>
+            </li>
+            <li> --> 
+       <!--     <li>
+              <a class="dropdown-item d-flex align-items-center" href="#">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Sign Out</span>
+              </a>
+            </li> -->
+
+          </ul><!-- End Profile Dropdown Items -->
+        </li><!-- End Profile Nav -->
+
+      </ul>
+    </nav><!-- End Icons Navigation -->
+
+  </header><!-- End Header -->
+
+  <!-- ======= Sidebar ======= -->
+  <aside id="sidebar" class="sidebar">
+
+    <ul class="sidebar-nav" id="sidebar-nav">
+
+      <li class="nav-item">
+        <a class="nav-link collapsed" onClick="faq()" >
+          <i class="bi bi-question-circle"></i>
+          <span >F.A.Q</span>
+        </a>
+      </li>
+
+      <li class="nav-item">
+        <a class="nav-link collapsed" href="https://cashfusion.org" target="_blank">
+          <i class="bi bi-question-circle"></i>
+          <span>CashFusion Privacy</span>
+        </a>
+      </li>
+
+      <!-- End F.A.Q Page Nav -->
+
+    </ul>
+
+  </aside><!-- End Sidebar-->
+
+  <main id="main" class="main">
+
+    <div class="pagetitle">
+      <h1>BCH Wallet Dashboard</h1>
+      <nav>
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+          <li class="breadcrumb-item active">Dashboard</li>
+          <li class="breadcrumb-item">Network: <span id='network'></span></li> 
+        </ol>
+      </nav>
+      <span style="font-size: 14px;
+    font-family: 'Nunito', sans-serif;
+    color: #899bbd;
+    font-weight: 600;" class="breadcrumb-item"></span>
+    </div><!-- End Page Title -->
+
+    <section class="section dashboard">
+      <div class="row">
+
+        <!-- Left side columns -->
+        <div class="col-lg-12">
+          <div class="row">
+
+            <!-- Balance Card -->
+            <div class="col-xxl-4 col-md-6">
+              <div class="card info-card sales-card">
+
+               <!-- <div class="filter">
+                  <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                  <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                    <li class="dropdown-header text-start">
+                      <h6>Filter</h6>
+                    </li>
+
+                    <li><a class="dropdown-item" href="#">Today</a></li>
+                    <li><a class="dropdown-item" href="#">This Month</a></li>
+                    <li><a class="dropdown-item" href="#">This Year</a></li>
+                  </ul>
+                </div> -->
+
+                <div class="card-body">
+                  <h5 class="card-title">Total Balance <span>| BCH </span></h5>
+
+                  <div class="d-flex align-items-center">
+                    <div style="transform: rotate(-0.03turn);" class="success card-icon rounded-circle d-flex align-items-center justify-content-center">
+                      <i class="bi bi-currency-bitcoin"></i>
+                    </div>
+                    <div class="ps-3">
+                      <h6 id="bal">Loading...</h6>
+                    <span id="sats" class="text-success small pt-1 fw-bold"></span> <span class="text-muted small pt-2 ps-1">Satoshis</span>
+
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div><!-- End Balance Card -->
+
+            <!-- Value Card -->
+            <div class="col-xxl-4 col-md-6">
+              <div class="card info-card revenue-card">
+
+             <!--   <div class="filter">
+                  <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                  <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                    <li class="dropdown-header text-start">
+                      <h6>Filter</h6>
+                    </li>
+
+                    <li><a class="dropdown-item" href="#">Today</a></li>
+                    <li><a class="dropdown-item" href="#">This Month</a></li>
+                    <li><a class="dropdown-item" href="#">This Year</a></li>
+                  </ul>
+                </div> -->
+
+                <div class="card-body">
+                  <h5 class="card-title">Total Value <span>| USD</span></h5>
+
+                  <div class="d-flex align-items-center">
+                    <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                      <i class="bi bi-currency-dollar"></i>
+                    </div>
+                    <div class="ps-3">
+                      <h6>$<span id="balusd"> Loading...</span></h6>
+                     <span class="text-success small pt-1 fw-bold">1 BCH = $<span id="bchprice"></span> </span> <span class="text-muted small pt-2 ps-1"></span> 
+
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div><!-- End Value Card -->
+
+            <!-- Mnemonic Card -->
+            <div class="col-xxl-4 col-xl-12">
+
+              <div class="card info-card customers-card">
+
+               <div class="filter">
+                  <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                  <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                    <li class="dropdown-header text-start">
+                      <h6>Menu</h6>
+                    </li>
+                    <li id="showMnemonicMenu"><a class="dropdown-item" onClick="showMnemonic()">Show Mnemonic</a></li>
+                    <li id="hideMnemonicMenu" style="display:none;" ><a class="dropdown-item" onClick="hideMnemonic()">Hide Mnemonic</a></li>
+                    <li><a class="dropdown-item" onClick="hideMnemonicTab()">Hide this Tab</a></li>
+                    <li><a class="dropdown-item" onClick="showMnemonicTab()">Show this Tab</a></li>
+                    <li><a class="dropdown-item" onClick="deleteWallet()">DELETE this wallet </a></li>
+                 <!--   <li><a class="dropdown-item" href="#">This Month</a></li>
+                    <li><a class="dropdown-item" href="#">This Year</a></li> -->
+                  </ul>
+                </div> 
+
+                <div class="card-body" id="theMnemonic">
+                  <h5 class="card-title">Mnemonic <i style="font-size:18pt" id="lock" class="bx bxs-lock"></i><i id="lock-open" style="font-size:18pt;display:none;" class="bx bxs-lock-open"></i><span> | Seed Phrase<br /><a href="https://blog.ledger.com/understanding-crypto-addresses-and-derivation-paths/" target="_blank">Derivation</a>: <span id="derivation"></span></span></h5>
+
+                  <div class="d-flex align-items-center">
+               <!--      <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                     
+                    </div> -->
+                    <div class="ps-3">
+                      <h5 id="mnemonic">Loading...</h5>
+                    <!--  <span class="text-danger small pt-1 fw-bold">12%</span> <span class="text-muted small pt-2 ps-1">decrease</span> -->
+
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div><!-- End Mnemonic Card -->
+            
+            
+            <!-- Deposit Address Card -->
+            <div class="col-xxl-4 col-xl-12">
+
+              <div class="card info-card customers-card" >
+
+               <div class="filter">
+                  <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                  <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                    <li class="dropdown-header text-start">
+                      <h6>Menu</h6>
+                    </li>
+
+                <!--    <li><a class="dropdown-item" onClick="getNewDepositAddr()">Create More Deposit Addresses</a></li> -->
+                 <!--   <li><a class="dropdown-item" href="#">This Month</a></li>
+                    <li><a class="dropdown-item" href="#">This Year</a></li> -->
+                  </ul>
+                </div> 
+
+                <div class="card-body">
+                  <h5 class="card-title">Deposit Address <i style="font-size:18pt;transform: rotate(-0.03turn);" class="ri ri-bit-coin-fill"></i> <span>| Cash Address Format</span></h5>
+
+                  <div class="d-flex" style="padding-top:10px;">
+                  <!--  <div style="transform: rotate(-0.02turn);" class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                      
+                    </div> -->
+                    <div class="ps-3" style="width:100%;word-wrap:break-word;">
+                      <h3 style="font-size:14pt;word-wrap:break-word;" id="cashaddr">Loading Bitcoin Cash Address...</h3> 
+                      <!-- TODO: ADD COPY BUTTON! -->
+                    <!--  <span class="text-danger small pt-1 fw-bold">12%</span> <span class="text-muted small pt-2 ps-1">decrease</span> -->
+                 <!--   <p style="text-align:center;"> -->
+                     
+                  <!-- </p> -->
+                  <p style="text-align: center;">
+                   <img src="assets/img/wait.svg" style="width:60%;max-width:15em;" id="deposit">
+                  </p>
+
+                  <p id="addresses">
+                    
+
+                  </p>
+
+                    <!-- Basic Modal style="display:none;" -->
+                    <button style="display:none;" id="modalbtn" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#utxoModal">
+                      Test Incoming Transaction
+                    </button>
+
+                    <button style="display:none;" onClick="createNotif()" id="notificationbtn" type="button" class="btn btn-primary">
+                      Test Notification
+                    </button>
+                    
+                    <div class="modal fade" id="utxoModal" tabindex="-1" data-bs-backdrop="false">
+                      <div class="modal-dialog">
+                        <div class="modal-content" data-bs-backdrop="false">
+                          <div class="modal-header">
+                            <h5 id="txdetectheader" class="modal-title">New TXID Detected</h5>
+                            <button type="button" class="btn-close" onClick="reloadBal()" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div id="txdetectbody" class="modal-body">
+                            A new Transaction ID / Hash has been detected for your Deposit Address - <span id="cashaddr2"></span>.  The TX Hash is <span id="txhash">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>.
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onClick="reloadBal()">Close</button>
+                            <!-- <button type="button" class="btn btn-primary">Okay</button> -->
+                          </div>
+                        </div>
+                      </div>
+                    </div><!-- End Basic Modal-->
+
+
+
+                    <!-- Basic Modal style="display:none;" -->
+                    <button style="display:none;" id="faqmodalbtn" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#FAQModal">
+                      Test FAQ Modal
+                    </button>
+                    
+                    <div class="modal fade" id="FAQModal" tabindex="-1">
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title">BCH Admin FAQ</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                          <div class="card-body" id="faq-modal">
+                          <h5 class="card-title">Frequently Asked Questions</h5>
+
+                          <div class="accordion accordion-flush" id="faq-group-1">
+
+                            <div class="accordion-item">
+                              <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" data-bs-target="#faqsOne-1" type="button" data-bs-toggle="collapse" aria-expanded="false">
+                                  What is BCH Admin?
+                                </button>
+                              </h2>
+                              <div id="faqsOne-1" class="accordion-collapse collapse" data-bs-parent="#faq-group-1" style="">
+                                <div class="accordion-body">
+                                  BCH Admin is a non-custodial Bitcoin Cash Web Wallet. All keys are safely stored within your browser and are local to your browser on your device, as well as the domain. This means that if you use a different device/browser, a different wallet will be created. Be sure to back up your Mnemonic Seed Phrase and Derivation Path so that you can restore your BCH on any other Bitcoin Cash wallet. 
+                                </div>
+                              </div>
+                            </div>
+
+                            <div class="accordion-item">
+                              <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" data-bs-target="#faqsOne-2" type="button" data-bs-toggle="collapse" aria-expanded="false">
+                                  What is Bitcoin Cash?
+                                </button>
+                              </h2>
+                              <div id="faqsOne-2" class="accordion-collapse collapse" data-bs-parent="#faq-group-1">
+                                <div class="accordion-body">
+                                  <a href="https://bitcoincash.org" target="_blank">Bitcoin Cash</a> is a <a href="https://keepbitcoinfree.org/wp-content/uploads/bitcoin.pdf" target="_blank">purely peer-to-peer version of electronic cash</a>, created in 2009 by Satoshi Nakamoto. Where BTC has repeatedly failed as a currency (high fees, slow confirmation times), and actually attempted to move users off-chain, Bitcoin Cash has succesfully scaled on-chain with larger blocks (32MB+), consistently low fees, and instant 0-conf transactions. Low fees and instant 0-conf transactions used to be features of BTC, but now only exist within BCH. <a href="https://whybitcoincash.com" target="_blank">Why Bitcoin Cash?</a>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div class="accordion-item">
+                              <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" data-bs-target="#faqsOne-3" type="button" data-bs-toggle="collapse" aria-expanded="false">
+                                  Is BCH Admin secure?
+                                </button>
+                              </h2>
+                              <div id="faqsOne-3" class="accordion-collapse collapse" data-bs-parent="#faq-group-1">
+                                <div class="accordion-body">
+                                  The code is open source and uses client-side JavaScript, as well as the <a href="https://mainnet.cash" target="_blank">mainnet-js library</a> to interact with the Bitcoin Cash blockchain. There is no malicious code and you are welcome to review it to confirm that statement. We use an SSL certificate to encrypt communications on the website. You can just as easily download the source code to run it locally. The code still reaches out to third party nodes to verify tx data and broadcast transactions. The private keys used to sign transactions do not ever leave your browser's local storage and are not saved anywhere else.
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <!-- <button type="button" class="btn btn-primary">Okay</button> -->
+                          </div>
+                        </div>
+                      </div>
+                    </div><!-- End Basic Modal-->
+                    
+                    </div>
+                  </div>
+
+                </div>
+              </div>  <!-- END MODALS ? -->
+
+            </div><!-- End Deposit Address Card -->
+            
+            </div><!-- End Deposit Address Card -->
+            
+            <!-- UTXO DATATABLE Card -->
+            <div class="col-xxl-4 col-xl-12">
+
+              <div id="utxocard" class="card recent-sales overflow-auto">
+<!--
+               <div class="filter">
+                  <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                  <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                    <li class="dropdown-header text-start">
+                      <h6>Menu</h6>
+                    </li>
+                    <li><a class="dropdown-item" onClick="hideMnemonicTab()" href="#">Hide Tab</a></li>
+                    <li><a class="dropdown-item" onClick="showMnemonic()" href="#">Show Mnemonic</a></li>
+                   <li><a class="dropdown-item" href="#">This Month</a></li>
+                    <li><a class="dropdown-item" href="#">This Year</a></li> 
+                  </ul>
+                </div> -->
+
+                <div class="card-body">
+                  <h5 class="card-title">Coins <i style="font-size:18pt;" class="bx bxs-coin-stack"></i> <span>| <span id="utxoLen" style="font-size:11pt;"></span>UTXOs - Unspent Transaction Outputs</span></h5>
+
+                  <div class="align-items-center">
+                <!--    <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                      <i class="bx bxs-coin-stack"></i>
+                    </div> -->
+                    <div class="ps-3">
+                      <!-- UTXO TABLE -->
+                      <table id="utxoTable" style="width:100%;" class="table table-borderless"> <!-- datatable NOT working (I think because the data is loaded after the datatables script runs. TODO FIX: Manually add in jQuery and run Datatables cmd for that utxoTable -->
+                          <tbody id="tbody">
+                            <thead><tr><th scope='col'>Spend</th><th scope='col'>TxID</th><th scope='col'>Satoshis</th><th scope='col'>Height</th><th scope='col'>Status</th></tr></thead>
+                          </tbody>
+                      </table>
+                      <!-- END UTXO TABLE -->
+                    <!--   <h5 id="mnemonic">Loading...</h5>
+                     <span class="text-danger small pt-1 fw-bold">12%</span> <span class="text-muted small pt-2 ps-1">decrease</span> -->
+
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div><!-- End UTXO Card -->
+            
+            
+            
+
+            
+             <!-- SEND BCH Card -->
+            <div class="col-xxl-4 col-xl-12">
+
+              <div id="sendBCHcard" class="card info-card customers-card">
+
+               <div class="filter">
+                  <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                  <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                    <li class="dropdown-header text-start">
+                      <h6>Menu</h6>
+                    </li>
+                    <li><a class="dropdown-item" onClick="hideMnemonicTab()" href="#">Clear</a></li>
+                 <!--   <li><a class="dropdown-item" onClick="showMnemonic()" href="#">Show Mnemonic</a></li>
+                    <li><a class="dropdown-item" href="#">This Month</a></li>
+                    <li><a class="dropdown-item" href="#">This Year</a></li> -->
+                  </ul>
+                </div> 
+
+                <div class="card-body">
+                  <h5 class="card-title">Send BCH <i style="font-size:18pt;" class="ri ri-secure-payment-fill"></i> <span> | p2p electronic cash </span> <img src="assets/img/fluid-loader.gif" id="loader" style="display:none;padding-left:100px;width:200px;"><span id="send-error"></span></h5>
+
+                  <div class="d-flex align-items-center">
+               <!--     <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                      <i class="ri ri-secure-payment-fill"></i>
+                    </div> -->
+                    <div class="ps-3">
+                      <span style="display:none;" id="txdata"></span>
+                    Select UTXOs from the table above, or enter a custom amount.<br />
+
+                    <!-- Floating Labels Form -->
+                          
+                    <!-- ADDRESS -->
+                    <form class="row g-3 needs-validation was-validated" novalidate>
+                      <div class="col-md-12">
+                        <div class="form-floating">
+                          <input type="text" class="form-control" id="sendtoaddress" required>
+                          <label for="sendtoaddress">Send to Address</label>
+                          <span style="" id="sendtoaddresserror"></span>
+                            <div style="" class="invalid-feedback">
+                              Please enter a valid bitcoincash: Address.
+                            </div>
+                        </div>
+                      </div>
+                      
+                      <!-- AMOUNT -->
+                      <div class="col-md-12">
+                        <div class="form-floating">
+                          <!-- TODO: Make send-total input readonly and add logic for selecting UTXOs -->
+                          <input type="number" class="form-control" id="send-total" name="amount" min=0.00000001 value=0.00000000 step="0.00000001" required> ($<span id="send-totalusd">0.00</span> USD) 
+                            <div style="" class="invalid-feedback">
+                              Enter a valid amount over 0.
+                            </div>
+                          <br /><input type="checkbox" id="sendmax" name="sendmax"> Send Max
+                        <!--  <input type="hidden" id="send-total-amount" value="0.00000000" readonly> -->
+                          
+                          <label for="sendamount">Send Amount (BCH)</label>
+        
+                        </div>
+                      </div>
+
+                      <span style="font-size:10pt;">* Fees will be subtracted from the total to be sent. Fees are always low with Bitcoin Cash.</span>
+                      <div class="text-center">
+                        <button onClick="sendBCH()" type="button" class="btn btn-primary">Submit</button>
+                        <button id="resetSendForm" type="reset" class="btn btn-secondary">Reset</button>
+                      </div>
+                    </form><!-- End floating Labels Form -->
+
+                    
+                    
+                  </div>
+
+                </div>
+              </div>
+
+            </div><!-- End SEND BCH Card -->
+
+
+
+            <!-- Reports 
+            <div class="col-12">
+              <div class="card">
+
+                <div class="filter">
+                  <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                  <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                    <li class="dropdown-header text-start">
+                      <h6>Filter</h6>
+                    </li>
+
+                    <li><a class="dropdown-item" href="#">Today</a></li>
+                    <li><a class="dropdown-item" href="#">This Month</a></li>
+                    <li><a class="dropdown-item" href="#">This Year</a></li>
+                  </ul>
+                </div>
+
+                <div class="card-body">
+                  <h5 class="card-title">Reports <span>/Today</span></h5>
+
+                 
+                  <div id="reportsChart"></div>
+
+                  <script>
+                    document.addEventListener("DOMContentLoaded", () => {
+                      new ApexCharts(document.querySelector("#reportsChart"), {
+                        series: [{
+                          name: 'Sales',
+                          data: [31, 40, 28, 51, 42, 82, 56],
+                        }, {
+                          name: 'Revenue',
+                          data: [11, 32, 45, 32, 34, 52, 41]
+                        }, {
+                          name: 'Customers',
+                          data: [15, 11, 32, 18, 9, 24, 11]
+                        }],
+                        chart: {
+                          height: 350,
+                          type: 'area',
+                          toolbar: {
+                            show: false
+                          },
+                        },
+                        markers: {
+                          size: 4
+                        },
+                        colors: ['#4154f1', '#2eca6a', '#ff771d'],
+                        fill: {
+                          type: "gradient",
+                          gradient: {
+                            shadeIntensity: 1,
+                            opacityFrom: 0.3,
+                            opacityTo: 0.4,
+                            stops: [0, 90, 100]
+                          }
+                        },
+                        dataLabels: {
+                          enabled: false
+                        },
+                        stroke: {
+                          curve: 'smooth',
+                          width: 2
+                        },
+                        xaxis: {
+                          type: 'datetime',
+                          categories: ["2018-09-19T00:00:00.000Z", "2018-09-19T01:30:00.000Z", "2018-09-19T02:30:00.000Z", "2018-09-19T03:30:00.000Z", "2018-09-19T04:30:00.000Z", "2018-09-19T05:30:00.000Z", "2018-09-19T06:30:00.000Z"]
+                        },
+                        tooltip: {
+                          x: {
+                            format: 'dd/MM/yy HH:mm'
+                          },
+                        }
+                      }).render();
+                    });
+                  </script>
+
+
+                </div>
+
+              </div>
+            </div><!-- End Reports -->
+
+            <!-- Recent Sales 
+            <div class="col-12">
+              <div class="card recent-sales overflow-auto">
+
+                <div class="filter">
+                  <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                  <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                    <li class="dropdown-header text-start">
+                      <h6>Filter</h6>
+                    </li>
+
+                    <li><a class="dropdown-item" href="#">Today</a></li>
+                    <li><a class="dropdown-item" href="#">This Month</a></li>
+                    <li><a class="dropdown-item" href="#">This Year</a></li>
+                  </ul>
+                </div>
+
+                <div class="card-body">
+                  <h5 class="card-title">Recent Sales <span>| Today</span></h5>
+
+                  <table class="table table-borderless datatable">
+                    <thead>
+                      <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Customer</th>
+                        <th scope="col">Product</th>
+                        <th scope="col">Price</th>
+                        <th scope="col">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <th scope="row"><a href="#">#2457</a></th>
+                        <td>Brandon Jacob</td>
+                        <td><a href="#" class="text-primary">At praesentium minu</a></td>
+                        <td>$64</td>
+                        <td><span class="badge bg-success">Approved</span></td>
+                      </tr>
+                      <tr>
+                        <th scope="row"><a href="#">#2147</a></th>
+                        <td>Bridie Kessler</td>
+                        <td><a href="#" class="text-primary">Blanditiis dolor omnis similique</a></td>
+                        <td>$47</td>
+                        <td><span class="badge bg-warning">Pending</span></td>
+                      </tr>
+                      <tr>
+                        <th scope="row"><a href="#">#2049</a></th>
+                        <td>Ashleigh Langosh</td>
+                        <td><a href="#" class="text-primary">At recusandae consectetur</a></td>
+                        <td>$147</td>
+                        <td><span class="badge bg-success">Approved</span></td>
+                      </tr>
+                      <tr>
+                        <th scope="row"><a href="#">#2644</a></th>
+                        <td>Angus Grady</td>
+                        <td><a href="#" class="text-primar">Ut voluptatem id earum et</a></td>
+                        <td>$67</td>
+                        <td><span class="badge bg-danger">Rejected</span></td>
+                      </tr>
+                      <tr>
+                        <th scope="row"><a href="#">#2644</a></th>
+                        <td>Raheem Lehner</td>
+                        <td><a href="#" class="text-primary">Sunt similique distinctio</a></td>
+                        <td>$165</td>
+                        <td><span class="badge bg-success">Approved</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                </div>
+
+              </div>
+            </div><!-- End Recent Sales -->
+
+            <!-- Top Selling 
+            <div class="col-12">
+              <div class="card top-selling overflow-auto">
+
+                <div class="filter">
+                  <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                  <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                    <li class="dropdown-header text-start">
+                      <h6>Filter</h6>
+                    </li>
+
+                    <li><a class="dropdown-item" href="#">Today</a></li>
+                    <li><a class="dropdown-item" href="#">This Month</a></li>
+                    <li><a class="dropdown-item" href="#">This Year</a></li>
+                  </ul>
+                </div>
+
+                <div class="card-body pb-0">
+                  <h5 class="card-title">Top Selling <span>| Today</span></h5>
+
+                  <table class="table table-borderless">
+                    <thead>
+                      <tr>
+                        <th scope="col">Preview</th>
+                        <th scope="col">Product</th>
+                        <th scope="col">Price</th>
+                        <th scope="col">Sold</th>
+                        <th scope="col">Revenue</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <th scope="row"><a href="#"><img src="assets/img/product-1.jpg" alt=""></a></th>
+                        <td><a href="#" class="text-primary fw-bold">Ut inventore ipsa voluptas nulla</a></td>
+                        <td>$64</td>
+                        <td class="fw-bold">124</td>
+                        <td>$5,828</td>
+                      </tr>
+                      <tr>
+                        <th scope="row"><a href="#"><img src="assets/img/product-2.jpg" alt=""></a></th>
+                        <td><a href="#" class="text-primary fw-bold">Exercitationem similique doloremque</a></td>
+                        <td>$46</td>
+                        <td class="fw-bold">98</td>
+                        <td>$4,508</td>
+                      </tr>
+                      <tr>
+                        <th scope="row"><a href="#"><img src="assets/img/product-3.jpg" alt=""></a></th>
+                        <td><a href="#" class="text-primary fw-bold">Doloribus nisi exercitationem</a></td>
+                        <td>$59</td>
+                        <td class="fw-bold">74</td>
+                        <td>$4,366</td>
+                      </tr>
+                      <tr>
+                        <th scope="row"><a href="#"><img src="assets/img/product-4.jpg" alt=""></a></th>
+                        <td><a href="#" class="text-primary fw-bold">Officiis quaerat sint rerum error</a></td>
+                        <td>$32</td>
+                        <td class="fw-bold">63</td>
+                        <td>$2,016</td>
+                      </tr>
+                      <tr>
+                        <th scope="row"><a href="#"><img src="assets/img/product-5.jpg" alt=""></a></th>
+                        <td><a href="#" class="text-primary fw-bold">Sit unde debitis delectus repellendus</a></td>
+                        <td>$79</td>
+                        <td class="fw-bold">41</td>
+                        <td>$3,239</td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                </div>
+
+              </div>
+            </div><!-- End Top Selling -->
+
+          </div>
+        </div><!-- End Left side columns -->
+
+
+      </div>
+    </section>
+
+  </main><!-- End #main -->
+
+  <!-- ======= Footer ======= -->
+  <footer id="footer" class="footer">
+    <div class="copyright">
+      Created by: <strong><span><a href="https://KeepBitcoinFree.org" target="_blank">KeepBitcoinFree.org</a></span></strong>. <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">Fork me.</a>
+    </div>
+  <!--  <div class="credits">
+      null.
+    </div> -->
+  </footer><!-- End Footer -->
+
+  <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+  <!--  JS Files -->
+ <!-- <script src="assets/vendor/apexcharts/apexcharts.min.js"></script> -->
+  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script> 
+  <script src="assets/js/main.js"></script>
+
+</body>
+
+</html>
