@@ -49,7 +49,10 @@
 <!-- TODO: Generate DataTable and Setup Checkboxes only after wallet utxos have been hydrated. Right now it is just waiting 3-4 seconds for each to run. -->
 
   <!-- CUSTOM SCRIPTS for BITCOIN CASH WALLET -->
-  <script src="assets/js/mainnet-1.1.32.js"></script> <!-- OLD = mainnet-1.1.32.js -->
+  <!-- <script src="assets/js/mainnet-1.1.32.js"></script> -->
+  <script src="assets/js/indexeddb-storage-2.2.5.js"></script>  
+  <script src="assets/js/mainnet-2.2.5.js"></script>
+  
   <script src="assets/js/jquery-3.6.4.min.js"></script>
   <script src="assets/js/jquery.dataTables.min.js"></script>
 
@@ -67,6 +70,9 @@
     document.addEventListener("DOMContentLoaded", async (event) => {
       globalThis.exports = globalThis.exports || {};
       Object.assign(globalThis, await __mainnetPromise);
+      
+      // Fix for loading persistent named wallets
+      BaseWallet.StorageProvider = IndexedDBProvider;
       
       // Get and Print Date to console
       let date = Date.now();
