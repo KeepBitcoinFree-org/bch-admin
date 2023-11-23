@@ -9,7 +9,7 @@
   <meta content="Bitcoin Cash Web Wallet built with clientside JavaScript." name="description">
   <meta content="Bitcoin Cash, JavaScript, Web Wallet" name="keywords">
 
-  <!-- LAST UPDATED - Wed 27 Sep 2023 10:10:43 PM EDT -->
+  <!-- LAST UPDATED - Sat 18 Nov 22:23:21 EST 2023 -->
   
   <!-- Favicons 
   <link href="assets/img/favicon.png" rel="icon"> -->
@@ -36,11 +36,12 @@
   * All Private Keys are Stored and used locally in the browser. The "webapp" is flatfile using only clientside Javascript. 
   * There is no server and no database. Only the index.html file is hosted on a server. 
   *
-  * For now 1 cookie/browser = one user. Keys are stored within the indexDB
-  * Using a private session will create a new wallet each time
-  * TODO: Maybe add ability to create user & log-in. 
-  * TODO: Add functionality to generate PAPER WALLET
-  * TODO: Add functionality to restore from seed
+  * For now 1 cookie/browser = one user. Keys are stored within the indexDB in the local user's browser.
+  * Using a private session will create a new wallet each time the website is opened.
+  * TODO: Maybe add ability to create user & log-in.
+  * TODO: Add functionality to create multiple wallets for a user.
+  * TODO: Add functionality to generate & print a PAPER WALLET.
+  * TODO: Add functionality to restore a wallet from seed
   * =======================================
 -->
 
@@ -49,7 +50,6 @@
 <!-- TODO: Generate DataTable and Setup Checkboxes only after wallet utxos have been hydrated. Right now it is just waiting 3-4 seconds for each to run. -->
 
   <!-- CUSTOM SCRIPTS for BITCOIN CASH WALLET -->
-  <!-- <script src="assets/js/mainnet-1.1.32.js"></script> -->
   <script src="assets/js/indexeddb-storage-2.2.5.js"></script>  
   <script src="assets/js/mainnet-2.2.5.js"></script>
   
@@ -60,7 +60,8 @@
       
       // Global Vars \\
       
-      // Set USERID. This is used to identify the wallet. A new userid = a new wallet.
+      // Set USERID. This is used to identify the wallet. A new userid = a new wallet. Right now this is only unique to the website. 
+      // Each time the site is visited, it creates a new cookie with this userid - which it uses to create/reference the BCH wallet.
       const userid = 'user:4202215252322';
       // Create Formatter to format numbers.
       const US = new Intl.NumberFormat();
@@ -71,7 +72,7 @@
       globalThis.exports = globalThis.exports || {};
       Object.assign(globalThis, await __mainnetPromise);
       
-      // Fix for loading persistent named wallets
+      // Fix for loading persistent named wallets from IndexDB Storage Provider.
       BaseWallet.StorageProvider = IndexedDBProvider;
       
       // Get and Print Date to console
@@ -85,10 +86,19 @@
       
       // Creates new/loads existing MAINNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
       const wallet = await Wallet.named(userid);
-      wallet.balance = await wallet.getBalance();
+      
+      // TODO: Make Heirarchical Derivation (HD node) - using new addresses for each new utxo. 
+      // Using default Electron-Cash "BIP44" Derivation Path to make importing to ElectronCash easier, not Bitcoin.com's multi-coin wallet.
+      // const wallet = await Wallet.fromSeed(wallet1.mnemonic, "m/44'/1'/145'/0/0");
+      
+      if( wallet.derivationPath !== "m/44'/1'/145'/0/0"){
+        console.log('Wallet is NOT using BIP44 Derivation path');
+      }else{
+        console.log('Wallet IS using BIP44 Derivation path');
+      }
       
       // TODO: add functionality to allow user to restore from seed phrase, or WIF private key.
-      // const wallet = await Wallet.fromSeed('.....');
+      // const wallet = await Wallet.fromSeed("horse duck stapler...", "m/44'/1'/145'/0/0");
       //const wallet = await Wallet.fromWIF('.....');
       // wallet.privateKeyWif
       // wallet.mnemonic
@@ -98,6 +108,9 @@
       let derPath = wallet.derivationPath;
       console.log('DERIVATION PATH FOR WALLET = ' + derPath);
       document.getElementById("derivation").innerHTML = derPath;
+      
+      // Get Wallet Balance
+      wallet.balance = await wallet.getBalance();
       
       // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
       wallet.utxos = await wallet.getUtxos();
@@ -1531,7 +1544,7 @@ function colorLinks(hex)
                               </h2>
                               <div id="faqsOne-3" class="accordion-collapse collapse" data-bs-parent="#faq-group-1">
                                 <div class="accordion-body">
-                                  The code is open source and uses client-side JavaScript, as well as the <a href="https://mainnet.cash" target="_blank">mainnet-js library</a> to interact with the Bitcoin Cash blockchain. There is no malicious code and you are welcome to review it to confirm that statement. We use an SSL certificate to encrypt communications on the website. You can just as easily download the source code to run it locally. The code still reaches out to third party nodes to verify tx data and broadcast transactions. The private keys used to sign transactions do not ever leave your browser's local storage and are not saved anywhere else.
+                                  <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">The BCH Admin code is open source</a>. The application is serverless and only uses client-side JavaScript and embedded scripts, provided by the <a href="https://mainnet.cash" target="_blank">mainnet-js library</a> to interact with the Bitcoin Cash blockchain and store the private keys within the Browser's IndexDB Storage. There is no malicious code; you are welcome to review the source code to confirm that statement. BCH Admin uses an SSL certificate to encrypt communications on the website. You can also just as easily download the source code and host the wallet locally. The code still reaches out to third party nodes to verify tx data and broadcast transactions. The private keys used to sign transactions do not ever leave your browser's local storage and are not saved anywhere else.
                                 </div>
                               </div>
                             </div>
@@ -1924,7 +1937,7 @@ function colorLinks(hex)
   <!-- ======= Footer ======= -->
   <footer id="footer" class="footer">
     <div class="copyright">
-      Created by: <strong><span><a href="https://KeepBitcoinFree.org" target="_blank">KeepBitcoinFree.org</a></span></strong>. <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">Fork me.</a>
+      Created by: <strong><span><a href="https://KeepBitcoinFree.org" target="_blank">KeepBitcoinFree.org</a></span></strong> | <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">Fork me.</a> | <a href="https://mainnet.cash/tutorial" target="_blank">mainnet-2.2.5.js</a>
     </div>
   <!--  <div class="credits">
       null.

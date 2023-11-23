@@ -1250,7 +1250,7 @@ width: 420px;
 }
 
 .modal-content {
- width: 600px; 
+/* width: 600px; This should allow width to be 100% instead to conform to mobile screens as well */
 } 
 
 #send-error {
