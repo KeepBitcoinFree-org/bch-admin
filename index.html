@@ -8,8 +8,6 @@
   <title>Dashboard - BCH Admin Wallet</title>
   <meta content="Bitcoin Cash Web Wallet built with clientside JavaScript." name="description">
   <meta content="Bitcoin Cash, JavaScript, Web Wallet" name="keywords">
-
-  <!-- LAST UPDATED - Sat 18 Nov 22:23:21 EST 2023 -->
   
   <!-- Favicons 
   <link href="assets/img/favicon.png" rel="icon"> -->
@@ -24,8 +22,10 @@
   <!-- CSS Files -->
   <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
   <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="assets/vendor/box-icons/boxicons.min.css" rel="stylesheet"> 
+
   <link href="assets/css/jquery.dataTables.min.css" rel="stylesheet">
- 
+
 
   <!-- Main CSS File -->
   <link href="assets/css/style.css" rel="stylesheet">
@@ -962,8 +962,7 @@ function colorLinks(hex)
     } // end reloadBal()
 
     function getNewDepositAddr() {
-      // TODO: add this funcitonality when mainnet.js can scan/use other addresses for funds. Right now it's only the one address that you can send/recieve on.
-
+      // TODO: add this funcitonality when mainnet.js can scan/use other addresses for funds. Right now it's only the one address that you can (EASILY) send/recieve on.
     }
           // ADD NOTIFICATION'
           let notifLength2 = 0;
@@ -1094,9 +1093,55 @@ function colorLinks(hex)
     onscroll(document, toggleBacktotop)
   }
 
+  function clearSendForm(){ 
+    document.getElementById('sendbchform').reset();  
+  }
+  
+  function clearVerifyForm(){ 
+    document.getElementById('signverifyform').reset();  
+  }
   
   
+  async function signMessage(){
+    // Get Form Data, trim whitespace. 
+      let msg = document.getElementById("signverifymessage").value.trim();
+    // Sign the Message (using the PRIVATE KEY and message) and return the newly created signature
+    try {
+      const sigResult = await wallet.sign(msg);
+      let signature = sigResult.signature;
+      
+      // Show the signature and other details for the user.
 
+    } catch (err) {
+          console.error('Failed to SIGN message: ', err);
+          // Show error to user
+    }
+    
+    // NodeBox example:
+    // Enter "sign, PRIVATEKEYWIF, MESSAGE" to sign a message with a private key.
+    // sign, KxtpRDUJDiutLaTV8Vuavhb6h7zq9YV9ZKA3dU79PCgYmNVmkkvS, Bitcoin Cash is Bitcoin
+  }
+  
+  async function verifyMessage(){
+    // Get Form Data
+      let msg = document.getElementById("signverifymessage").value.trim();
+
+    // Verify the Message (using the Message & Signature) 
+    try {
+      verifyResult = await francisPublic.verify(message, sig);
+    
+          // Show the verification of the signature and other details for the user.
+
+    } catch (err) {
+          console.error('Failed to VERIFY message: ', err);
+          // Show error to user
+    }
+      
+    // NodeBox Example:
+    // Enter "verify, BCH_ADDRESS, SIGNATURE, MESSAGE" to verify a signed message.
+    // verify, bitcoincash:qp2zvw3zpk5xx43w4tve7mtekd9kaxwj4uenq9eupv, II+rsv72D/KnZ6noO25WWtXnu3C2seCuJEJ6HwB3yalFTbeBjF1FSw6XuaOnxpwsrEXHimIdJB9k3aKsJaQB0L0=, Bitcoin Cash is Bitcoin
+  }
+  
   const copyTextOld = async () => {
     try {
       let text = document.getElementById('cashaddr').innerText;
@@ -1107,12 +1152,21 @@ function colorLinks(hex)
     }
   }
 
+
+// CUSTOM SCRIPT TO SAVE AS PDF - PAPER WALLET ON THE GO.
+//function getPDF() {
+    //var doc = new jsPDF();
+    //doc.addHTML(document.body, function() {
+        //doc.save('test.pdf')
+    //})
+// }
+
   </script>
 
   <script type="text/javascript">
     $(document).ready(function(){
       //jQuery
-      // Intantiate utxo DataTable after 2 seconds to allow UTXO hydration
+      // Intantiate utxo DataTable after 3 seconds to allow proper UTXO hydration
       setTimeout(function(){
         let table = new DataTable('#utxoTable');
         $(".dataTables_empty").css("display", "none");
@@ -1327,6 +1381,13 @@ function colorLinks(hex)
                     <li><a class="dropdown-item" href="#">This Year</a></li>
                   </ul>
                 </div> -->
+
+                <noscript>
+                  <div style="color:red">
+                    *This site requires JavaScript. Please enable JavaScript in your browser to create a new Bitcoin Cash wallet.
+                  <br /><br />
+                  </div>
+                </noscript>
 
                 <div class="card-body">
                   <h5 class="card-title">Total Balance <span>| BCH </span></h5>
@@ -1567,7 +1628,7 @@ function colorLinks(hex)
 
             </div><!-- End Deposit Address Card -->
             
-            </div><!-- End Deposit Address Card -->
+            </div> <!-- End Row? -->
             
             <!-- UTXO DATATABLE Card -->
             <div class="col-xxl-4 col-xl-12">
@@ -1628,7 +1689,7 @@ function colorLinks(hex)
                     <li class="dropdown-header text-start">
                       <h6>Menu</h6>
                     </li>
-                    <li><a class="dropdown-item" onClick="hideMnemonicTab()" href="#">Clear</a></li>
+                    <li><a class="dropdown-item" onClick="clearSendForm()">Clear</a></li>
                  <!--   <li><a class="dropdown-item" onClick="showMnemonic()" href="#">Show Mnemonic</a></li>
                     <li><a class="dropdown-item" href="#">This Month</a></li>
                     <li><a class="dropdown-item" href="#">This Year</a></li> -->
@@ -1649,7 +1710,7 @@ function colorLinks(hex)
                     <!-- Floating Labels Form -->
                           
                     <!-- ADDRESS -->
-                    <form class="row g-3 needs-validation was-validated" novalidate>
+                    <form id="sendbchform" class="row g-3 needs-validation was-validated" novalidate>
                       <div class="col-md-12">
                         <div class="form-floating">
                           <input type="text" class="form-control" id="sendtoaddress" required>
@@ -1694,6 +1755,54 @@ function colorLinks(hex)
             </div><!-- End SEND BCH Card -->
 
 
+          <!-- Start SIGN / VERIFY MESSAGE CARD -->
+          <div class="col-xxl-4 col-xl-12">
+             <div id="signverify" class="card info-card customers-card">
+
+               <div class="filter">
+                  <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                  <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                    <li class="dropdown-header text-start">
+                      <h6>Menu</h6>
+                    </li>
+                    <li><a class="dropdown-item" onClick="clearVerifyForm()" href="#">Clear</a></li>
+                 <!--   <li><a class="dropdown-item" onClick="showMnemonic()" href="#">Show Mnemonic</a></li>
+                    <li><a class="dropdown-item" href="#">This Month</a></li>
+                    <li><a class="dropdown-item" href="#">This Year</a></li> -->
+                  </ul>
+                </div> 
+
+                <div class="card-body">
+                  <h5 class="card-title">Sign or Verify <i style="font-size:18pt;" class="ri ri-secure-payment-fill"></i> <span> | a Message with Bitcoin Cash </span> </h5>
+
+                  <div class="d-flex align-items-center">
+                    <div class="ps-3">
+                      <form id="signverifyform" class="row g-3">
+                      <div class="col-md-12">
+                        <div class="form-floating">
+                          <input type="text" class="form-control" id="messageverifysign" size="100%" required>
+                          <label for="messageverifysign">Message to Sign or Verify</label>
+                          <span style="" id="messageverifysignerror"></span>
+<!--
+                            <div style="" class="invalid-feedback">
+                              Please enter a valid bitcoincash: Address.
+                            </div>
+-->
+                        </div>
+                      </div>
+                                            <div class="text-center">
+                        <button onClick="signMessage()" type="button" class="btn btn-primary">Sign</button>
+                        <button onClick="verifyMessage()" type="button" class="btn btn-secondary">Verify</button>
+                        <button id="resetVerifyForm" type="reset" class="btn btn-secondary">Reset</button>
+
+                        <!-- <button id="resetSendForm" type="reset" class="btn btn-secondary">Reset</button> -->
+                       </form>
+                       </div>
+                      </div>
+                    </div>
+                  </div>
+          </div>
+          <!-- End SIGN / VERIFY MESSAGE CARD -->
 
             <!-- Reports 
             <div class="col-12">
