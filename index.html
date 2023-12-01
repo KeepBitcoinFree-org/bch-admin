@@ -23,6 +23,7 @@
   <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
   <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
   <link href="assets/vendor/box-icons/boxicons.min.css" rel="stylesheet"> 
+  <link href="assets/vendor/remix-icons/remixicon.css" rel="stylesheet"> 
 
   <link href="assets/css/jquery.dataTables.min.css" rel="stylesheet">
 
@@ -1103,17 +1104,29 @@ function colorLinks(hex)
   
   
   async function signMessage(){
-    // Get Form Data, trim whitespace. 
+    // Get Form Data for signing message, trim whitespace. 
       let msg = document.getElementById("signverifymessage").value.trim();
+      
     // Sign the Message (using the PRIVATE KEY and message) and return the newly created signature
     try {
+      // Creates new/loads existing MAINNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
+      const wallet = await Wallet.named(userid);
+      
+      // Sign message using wallet
       const sigResult = await wallet.sign(msg);
       let signature = sigResult.signature;
       
-      // Show the signature and other details for the user.
-
+      // Show the signature and other details for the user in an alert.
+      window.alert('Message:\n  ' + msg + '\n \nSigned by address:\n' + wallet.cashaddr + '\n \nSignature:\n' + signature);
+      prompt("Copy to clipboard: Ctrl+C, Enter", signature);
+      
+      // Or show on the webpage..
+      // document.getElementById("sigformessage").innerHTML = 'Message:<br />  ' + msg + '<br />Signed by Address:<br />  ' + wallet.cashaddr + '<br />Signature:<br />  ' + signature + '<br />';
+      
     } catch (err) {
           console.error('Failed to SIGN message: ', err);
+          window.alert('Failed to SIGN message: ' + err);
+          // document.getElementById('signverifymessageerror').innerHTML = err;
           // Show error to user
     }
     
@@ -1126,9 +1139,12 @@ function colorLinks(hex)
     // Get Form Data
       let msg = document.getElementById("signverifymessage").value.trim();
 
+    // Creates new/loads existing MAINNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
+    const wallet = await Wallet.named(userid)
+      
     // Verify the Message (using the Message & Signature) 
     try {
-      verifyResult = await francisPublic.verify(message, sig);
+      verifyResult = await wallet.verify(message, sig);
     
           // Show the verification of the signature and other details for the user.
 
@@ -1733,7 +1749,7 @@ function colorLinks(hex)
                           <br /><input type="checkbox" id="sendmax" name="sendmax"> Send Max
                         <!--  <input type="hidden" id="send-total-amount" value="0.00000000" readonly> -->
                           
-                          <label for="sendamount">Send Amount (BCH)</label>
+                          <label for="send-total">Send Amount (BCH)</label>
         
                         </div>
                       </div>
@@ -1773,26 +1789,32 @@ function colorLinks(hex)
                 </div> 
 
                 <div class="card-body">
-                  <h5 class="card-title">Sign or Verify <i style="font-size:18pt;" class="ri ri-secure-payment-fill"></i> <span> | a Message with Bitcoin Cash </span> </h5>
+                  <h5 class="card-title">Sign or Verify <i style="font-size:18pt;" class="bx bx-check-shield"></i> <span> | Messages with your Bitcoin Cash Private Key</span> </h5>
 
                   <div class="d-flex align-items-center">
                     <div class="ps-3">
+                        <span style="" id="sigformessage"></span>
+                          <span style="" id="signverifymessageerror"></span>
+                      <!-- TODO: Add tabs for Sign / Verify... or hide/show inputs for WIF and verify button -->
                       <form id="signverifyform" class="row g-3">
                       <div class="col-md-12">
                         <div class="form-floating">
-                          <input type="text" class="form-control" id="messageverifysign" size="100%" required>
-                          <label for="messageverifysign">Message to Sign or Verify</label>
-                          <span style="" id="messageverifysignerror"></span>
+                          <input type="text" class="form-control" id="signverifymessage" size="100%" required>
+                          <label for="signverifymessage">Message to Sign or Verify</label>
+
 <!--
                             <div style="" class="invalid-feedback">
                               Please enter a valid bitcoincash: Address.
                             </div>
 -->
+
+                           <br /><input style="font-size:10pt;" type="checkbox" id="customWIF" name="customWIF"> Use different WIF instead of current wallet?
                         </div>
                       </div>
-                                            <div class="text-center">
+                       <div class="text-center">
                         <button onClick="signMessage()" type="button" class="btn btn-primary">Sign</button>
-                        <button onClick="verifyMessage()" type="button" class="btn btn-secondary">Verify</button>
+                       <!-- <button onClick="verifyMessage()" type="button" class="btn btn-secondary">Verify</button> -->
+                        <button style="opacity:0.4" type="button" class="btn btn-secondary">Verify</button>
                         <button id="resetVerifyForm" type="reset" class="btn btn-secondary">Reset</button>
 
                         <!-- <button id="resetSendForm" type="reset" class="btn btn-secondary">Reset</button> -->
@@ -2046,7 +2068,7 @@ function colorLinks(hex)
   <!-- ======= Footer ======= -->
   <footer id="footer" class="footer">
     <div class="copyright">
-      Created by: <strong><span><a href="https://KeepBitcoinFree.org" target="_blank">KeepBitcoinFree.org</a></span></strong> | <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">Fork me.</a> | <a href="https://mainnet.cash/tutorial" target="_blank">mainnet-2.2.5.js</a>
+      <strong><span><a href="https://KeepBitcoinFree.org" target="_blank">KeepBitcoinFree.org</a></span></strong> | <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">Fork me.</a> | <a href="https://mainnet.cash/tutorial" target="_blank">mainnet-2.2.5.js</a>
     </div>
   <!--  <div class="credits">
       null.
@@ -2056,7 +2078,6 @@ function colorLinks(hex)
   <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
 
   <!--  JS Files -->
- <!-- <script src="assets/vendor/apexcharts/apexcharts.min.js"></script> -->
   <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script> 
   <script src="assets/js/main.js"></script>
 
