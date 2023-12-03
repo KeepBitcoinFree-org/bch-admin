@@ -1093,6 +1093,22 @@ function colorLinks(hex)
     window.addEventListener('load', toggleBacktotop)
     onscroll(document, toggleBacktotop)
   }
+  
+  function showVerifyBtn(){
+    //console.log('onblur kicked off...');
+    // triggered by user writing into input field.
+    let signatureToVerify = document.getElementById("signaturetoverify").value;
+        
+    if(signatureToVerify.length !== 0){
+      // Show the Verify btn & Hide the Sign btn
+        document.getElementById("verifyBtn").style.display = "inline";
+        document.getElementById("signBtn").style.display = "none";
+      }else{
+        // Show the Sign btn & Hide the Verify btn
+        document.getElementById("verifyBtn").style.display = "none";
+        document.getElementById("signBtn").style.display = "inline";
+      }
+  }
 
   function clearSendForm(){ 
     document.getElementById('sendbchform').reset();  
@@ -1117,7 +1133,7 @@ function colorLinks(hex)
       let signature = sigResult.signature;
       
       // Show the signature and other details for the user in an alert.
-      window.alert('Message:\n  ' + msg + '\n \nSigned by address:\n' + wallet.cashaddr + '\n \nSignature:\n' + signature);
+      window.alert('Message:\n  ' + msg + '\n \nBitcoin Cash Address:\n' + wallet.cashaddr + '\n \nSignature:\n' + signature);
       prompt("Copy to clipboard: Ctrl+C, Enter", signature);
       
       // Or show on the webpage..
@@ -1136,20 +1152,25 @@ function colorLinks(hex)
   }
   
   async function verifyMessage(){
+    console.log('verifying message...');
     // Get Form Data
       let msg = document.getElementById("signverifymessage").value.trim();
+      let sig = document.getElementById("signaturetoverify").value;
 
+      console.log('msg = ' + msg);
+      console.log('sig = ' + sig);
     // Creates new/loads existing MAINNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
     const wallet = await Wallet.named(userid)
       
     // Verify the Message (using the Message & Signature) 
     try {
-      verifyResult = await wallet.verify(message, sig);
-    
+      verifyResult = await wallet.verify(msg, sig);
+      window.alert('Valid:\n ' + verifyResult.valid + '\n \nMessage:\n  ' + msg + '\n \nBitcoin Cash Address:\n' + wallet.cashaddr + '\n \nSignature:\n' + sig);
           // Show the verification of the signature and other details for the user.
 
     } catch (err) {
           console.error('Failed to VERIFY message: ', err);
+          window.alert('Failed to VERIFY message: ' + err);
           // Show error to user
     }
       
@@ -1799,8 +1820,14 @@ function colorLinks(hex)
                       <form id="signverifyform" class="row g-3">
                       <div class="col-md-12">
                         <div class="form-floating">
-                          <input type="text" class="form-control" id="signverifymessage" size="100%" required>
-                          <label for="signverifymessage">Message to Sign or Verify</label>
+                        <input type="text" class="form-control" name="signverifymessage" id="signverifymessage" size="100%" required>
+                         <label for="signverifymessage">Message to Sign or Verify</label> 
+                          </div>
+                          <br />
+                          <div class="form-floating">
+                          <input type="text" class="form-control" name="signaturetoverify" id="signaturetoverify" size="100%" onblur="showVerifyBtn()" oninput="showVerifyBtn()">
+                          <label for="signaturetoverify">Signature to Verify</label>
+
 
 <!--
                             <div style="" class="invalid-feedback">
@@ -1810,14 +1837,16 @@ function colorLinks(hex)
 
                            <br /><input style="font-size:10pt;" type="checkbox" id="customWIF" name="customWIF"> Use different WIF instead of current wallet?
                         </div>
-                      </div>
+                      
                        <div class="text-center">
-                        <button onClick="signMessage()" type="button" class="btn btn-primary">Sign</button>
-                       <!-- <button onClick="verifyMessage()" type="button" class="btn btn-secondary">Verify</button> -->
-                        <button style="opacity:0.4" type="button" class="btn btn-secondary">Verify</button>
+                         
+                        <button id="signBtn" onClick="signMessage()" type="button" class="btn btn-primary">Sign</button>
+                        <button id="verifyBtn" style="display:none;" onClick="verifyMessage()" type="button" class="btn btn-primary">Verify</button> 
+                        <!-- <button style="opacity:0.4" type="button" class="btn btn-secondary">Verify</button> -->
                         <button id="resetVerifyForm" type="reset" class="btn btn-secondary">Reset</button>
 
                         <!-- <button id="resetSendForm" type="reset" class="btn btn-secondary">Reset</button> -->
+                       </div>
                        </form>
                        </div>
                       </div>
