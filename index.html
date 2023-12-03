@@ -1124,28 +1124,32 @@ function colorLinks(hex)
       let msg = document.getElementById("signverifymessage").value.trim();
       
     // Sign the Message (using the PRIVATE KEY and message) and return the newly created signature
-    try {
-      // Creates new/loads existing MAINNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
-      const wallet = await Wallet.named(userid);
-      
-      // Sign message using wallet
-      const sigResult = await wallet.sign(msg);
-      let signature = sigResult.signature;
-      
-      // Show the signature and other details for the user in an alert.
-      window.alert('Message:\n  ' + msg + '\n \nBitcoin Cash Address:\n' + wallet.cashaddr + '\n \nSignature:\n' + signature);
-      prompt("Copy to clipboard: Ctrl+C, Enter", signature);
-      
-      // Or show on the webpage..
-      // document.getElementById("sigformessage").innerHTML = 'Message:<br />  ' + msg + '<br />Signed by Address:<br />  ' + wallet.cashaddr + '<br />Signature:<br />  ' + signature + '<br />';
-      
-    } catch (err) {
-          console.error('Failed to SIGN message: ', err);
-          window.alert('Failed to SIGN message: ' + err);
-          // document.getElementById('signverifymessageerror').innerHTML = err;
-          // Show error to user
-    }
-    
+  if(msg.length > 0){
+        document.getElementById('signverifymsgerror').style.display = 'none';
+      try {
+        // Creates new/loads existing MAINNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
+        const wallet = await Wallet.named(userid);
+        
+        // Sign message using wallet
+        const sigResult = await wallet.sign(msg);
+        let signature = sigResult.signature;
+        
+        // Show the signature and other details for the user in an alert.
+        window.alert('Message:\n   ' + msg + '\n \nBitcoin Cash Address:\n' + wallet.cashaddr + '\n \nSignature:\n' + signature);
+        prompt("Copy to clipboard: Ctrl+C, Enter", signature);
+        
+        // Or show on the webpage..
+        // document.getElementById("sigformessage").innerHTML = 'Message:<br />  ' + msg + '<br />Signed by Address:<br />  ' + wallet.cashaddr + '<br />Signature:<br />  ' + signature + '<br />';
+        
+      } catch (err) {
+            console.error('Failed to SIGN message: ', err);
+            window.alert('Failed to SIGN message: ' + err);
+            // Show error to user
+      }
+  }else{
+    // show message empty error to user
+    document.getElementById('signverifymsgerror').style.display = 'inline';
+  }
     // NodeBox example:
     // Enter "sign, PRIVATEKEYWIF, MESSAGE" to sign a message with a private key.
     // sign, KxtpRDUJDiutLaTV8Vuavhb6h7zq9YV9ZKA3dU79PCgYmNVmkkvS, Bitcoin Cash is Bitcoin
@@ -1163,6 +1167,9 @@ function colorLinks(hex)
     const wallet = await Wallet.named(userid)
       
     // Verify the Message (using the Message & Signature) 
+  if(msg.length > 0){
+    document.getElementById('signverifymsgerror').style.display = 'none';
+    
     try {
       verifyResult = await wallet.verify(msg, sig);
       window.alert('Valid:\n ' + verifyResult.valid + '\n \nMessage:\n  ' + msg + '\n \nBitcoin Cash Address:\n' + wallet.cashaddr + '\n \nSignature:\n' + sig);
@@ -1173,7 +1180,12 @@ function colorLinks(hex)
           window.alert('Failed to VERIFY message: ' + err);
           // Show error to user
     }
-      
+    
+  }else{
+    // show message empty error to user
+    document.getElementById('signverifymsgerror').style.display = 'inline';
+    
+  }
     // NodeBox Example:
     // Enter "verify, BCH_ADDRESS, SIGNATURE, MESSAGE" to verify a signed message.
     // verify, bitcoincash:qp2zvw3zpk5xx43w4tve7mtekd9kaxwj4uenq9eupv, II+rsv72D/KnZ6noO25WWtXnu3C2seCuJEJ6HwB3yalFTbeBjF1FSw6XuaOnxpwsrEXHimIdJB9k3aKsJaQB0L0=, Bitcoin Cash is Bitcoin
@@ -1188,7 +1200,6 @@ function colorLinks(hex)
       console.error('Failed to copy: ', err);
     }
   }
-
 
 // CUSTOM SCRIPT TO SAVE AS PDF - PAPER WALLET ON THE GO.
 //function getPDF() {
@@ -1359,6 +1370,48 @@ function colorLinks(hex)
     <ul class="sidebar-nav" id="sidebar-nav">
 
       <li class="nav-item">
+        <a class="nav-link collapsed" href="#balanceheader" >
+          <i class="bi bi-currency-bitcoin"></i>
+          <span >Balance</span>
+        </a>
+      </li>
+      
+            <li class="nav-item">
+        <a class="nav-link collapsed" href="#mnemoniclink">
+          <i class="bx bxs-leaf"></i>
+          <span >Mnemonic / Seed</span>
+        </a>
+      </li>
+      
+            <li class="nav-item">
+        <a class="nav-link collapsed" href="#depositheader" >
+          <i class="bi bi-safe-fill"></i>
+          <span >Deposit</span>
+        </a>
+      </li>
+      
+            <li class="nav-item">
+        <a class="nav-link collapsed" href="#coinsheader" >
+          <i class="bi bi-cash-coin"></i>
+          <span >Coins / UTXOs</span>
+        </a>
+      </li>
+      
+            <li class="nav-item">
+        <a class="nav-link collapsed" href="#sendheader" >
+          <i class="bi bi-send-check-fill"></i>
+          <span>Send</span>
+        </a>
+      </li>
+      
+                  <li class="nav-item">
+        <a class="nav-link collapsed" href="#signverifyheader" >
+          <i class="bi bi-check-lg"></i>
+          <span>Sign / Verify</span>
+        </a>
+      </li>
+
+      <li class="nav-item">
         <a class="nav-link collapsed" onClick="faq()" >
           <i class="bi bi-question-circle"></i>
           <span >F.A.Q</span>
@@ -1367,7 +1420,7 @@ function colorLinks(hex)
 
       <li class="nav-item">
         <a class="nav-link collapsed" href="https://cashfusion.org" target="_blank">
-          <i class="bi bi-question-circle"></i>
+          <i class="bi bi-incognito"></i>
           <span>CashFusion Privacy</span>
         </a>
       </li>
@@ -1427,7 +1480,7 @@ function colorLinks(hex)
                 </noscript>
 
                 <div class="card-body">
-                  <h5 class="card-title">Total Balance <span>| BCH </span></h5>
+                  <h5 id="balanceheader" class="card-title">Total Balance <span>| BCH </span></h5>
 
                   <div class="d-flex align-items-center">
                     <div style="transform: rotate(-0.03turn);" class="success card-icon rounded-circle d-flex align-items-center justify-content-center">
@@ -1482,7 +1535,7 @@ function colorLinks(hex)
             <!-- Mnemonic Card -->
             <div class="col-xxl-4 col-xl-12">
 
-              <div class="card info-card customers-card">
+              <div class="card info-card customers-card" id="mnemoniclink">
 
                <div class="filter">
                   <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
@@ -1539,7 +1592,7 @@ function colorLinks(hex)
                 </div> 
 
                 <div class="card-body">
-                  <h5 class="card-title">Deposit Address <i style="font-size:18pt;transform: rotate(-0.03turn);" class="ri ri-bit-coin-fill"></i> <span>| Cash Address Format</span></h5>
+                  <h5  id="depositheader" class="card-title">Deposit Address <i style="font-size:18pt;transform: rotate(-0.03turn);" class="ri ri-bit-coin-fill"></i> <span>| Cash Address Format</span></h5>
 
                   <div class="d-flex" style="padding-top:10px;">
                   <!--  <div style="transform: rotate(-0.02turn);" class="card-icon rounded-circle d-flex align-items-center justify-content-center">
@@ -1561,14 +1614,14 @@ function colorLinks(hex)
 
                   </p>
 
-                    <!-- Basic Modal style="display:none;" -->
+                    <!-- Basic Modal style="display:none;"
                     <button style="display:none;" id="modalbtn" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#utxoModal">
                       Test Incoming Transaction
                     </button>
 
                     <button style="display:none;" onClick="createNotif()" id="notificationbtn" type="button" class="btn btn-primary">
                       Test Notification
-                    </button>
+                    </button> -->
                     
                     <div class="modal fade" id="utxoModal" tabindex="-1" data-bs-backdrop="false">
                       <div class="modal-dialog">
@@ -1686,7 +1739,7 @@ function colorLinks(hex)
                 </div> -->
 
                 <div class="card-body">
-                  <h5 class="card-title">Coins <i style="font-size:18pt;" class="bx bxs-coin-stack"></i> <span>| <span id="utxoLen" style="font-size:11pt;"></span>UTXOs - Unspent Transaction Outputs</span></h5>
+                  <h5 id="coinsheader" class="card-title">Coins <i style="font-size:18pt;" class="bx bxs-coin-stack"></i> <span>| <span id="utxoLen" style="font-size:11pt;"></span>UTXOs - Unspent Transaction Outputs</span></h5>
 
                   <div class="align-items-center">
                 <!--    <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
@@ -1734,7 +1787,7 @@ function colorLinks(hex)
                 </div> 
 
                 <div class="card-body">
-                  <h5 class="card-title">Send BCH <i style="font-size:18pt;" class="ri ri-secure-payment-fill"></i> <span> | p2p electronic cash </span> <img src="assets/img/fluid-loader.gif" id="loader" style="display:none;padding-left:100px;width:200px;"><span id="send-error"></span></h5>
+                  <h5 id="sendheader" class="card-title">Send BCH <i style="font-size:18pt;" class="ri ri-secure-payment-fill"></i> <span> | p2p electronic cash </span> <img src="assets/img/fluid-loader.gif" id="loader" style="display:none;padding-left:100px;width:200px;"><span id="send-error"></span></h5>
 
                   <div class="d-flex align-items-center">
                <!--     <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
@@ -1810,7 +1863,7 @@ function colorLinks(hex)
                 </div> 
 
                 <div class="card-body">
-                  <h5 class="card-title">Sign or Verify <i style="font-size:18pt;" class="bx bx-check-shield"></i> <span> | Messages with your Bitcoin Cash Private Key</span> </h5>
+                  <h5 id="signverifyheader" class="card-title">Sign or Verify <i style="font-size:18pt;" class="bx bx-check-shield"></i> <span> | Messages with your Address & Private Key</span> </h5>
 
                   <div class="d-flex align-items-center">
                     <div class="ps-3">
@@ -1822,6 +1875,9 @@ function colorLinks(hex)
                         <div class="form-floating">
                         <input type="text" class="form-control" name="signverifymessage" id="signverifymessage" size="100%" required>
                          <label for="signverifymessage">Message to Sign or Verify</label> 
+                            <div id="signverifymsgerror" style="display:none;" class="invalid-feedback">
+                              Please enter a message to sign or verify.
+                            </div>
                           </div>
                           <br />
                           <div class="form-floating">
@@ -1829,13 +1885,11 @@ function colorLinks(hex)
                           <label for="signaturetoverify">Signature to Verify</label>
 
 
-<!--
-                            <div style="" class="invalid-feedback">
-                              Please enter a valid bitcoincash: Address.
-                            </div>
--->
 
-                           <br /><input style="font-size:10pt;" type="checkbox" id="customWIF" name="customWIF"> Use different WIF instead of current wallet?
+                            <!-- TODO: provide functionality to use different WIF
+                            Or just provide functionality to restore wallet from different WIF/seed, then you can sign/verify with that? -->
+                            <br />
+                           <!-- <input style="font-size:10pt;" type="checkbox" id="customWIF" name="customWIF" disabled> Use different WIF instead of current wallet? -->
                         </div>
                       
                        <div class="text-center">
