@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
 
-  <title>Dashboard - BCH Admin Wallet</title>
+  <title>Dashboard - BCH Admin</title>
   <meta content="Bitcoin Cash Web Wallet built with clientside JavaScript." name="description">
   <meta content="Bitcoin Cash, JavaScript, Web Wallet" name="keywords">
   
@@ -43,6 +43,8 @@
   * TODO: Add functionality to create multiple wallets for a user.
   * TODO: Add functionality to generate & print a PAPER WALLET.
   * TODO: Add functionality to restore a wallet from seed
+  * TODO: Add functionality for PointOfSale system. Use the xpub key to display a screen that has a new address for each order. Watch that address while open, etc.
+  * From the xPub, we generate addresses starting from the first address in the sequence, and a new address from the next one in the sequence for every new order, using the BIP44 derivation path.
   * =======================================
 -->
 
@@ -109,6 +111,8 @@
       let derPath = wallet.derivationPath;
       console.log('DERIVATION PATH FOR WALLET = ' + derPath);
       document.getElementById("derivation").innerHTML = derPath;
+      document.getElementById("derivation1").innerHTML = derPath;
+      
       
       // Get Wallet Balance
       wallet.balance = await wallet.getBalance();
@@ -187,7 +191,7 @@
        // console.log('wallet.getDepositAddress() = ' + wallet.getDepositAddress());
         
         // Add Deposit Addr QR code to HTML.
-        document.querySelector('#deposit').src = wallet.getDepositQr().src;
+        document.querySelector('#depositqr').src = wallet.getDepositQr().src;
         
         // Use derivation path to get PubKeys to create additional recieve addresses (if needed?)
         //await wallet.getXPubKeys();
@@ -295,8 +299,8 @@
 
     // FUNCTION TO WATCH UTXO CHECKBOXES AND RE-CALC TOTALS BASED ON INPUT CHANGES
  //  function calculateSendTotal() {
-  setTimeout( function(){   
-     // console.log('This ting happened 4 seconds later...');
+  setTimeout( function(){  
+   // console.log('watching utxo checkboxes...'); 
       var inputs = document.getElementsByClassName('coinsum'),
       total  = document.getElementById('send-total'),
       totalUsd = document.getElementById('send-totalusd');
@@ -310,6 +314,8 @@
           console.log('Input ' + i + '. input.checked = ' + inputs[i].checked);
 							      
           if(inputMax.checked === true){
+            // first reset send-total to 0, in case user entered custom amounts.
+            total.value = 0;
           // if it's not already selected, click the checkbox.
             if(inputs[i].checked === false){
               inputs[i].click();
@@ -329,10 +335,13 @@
       for (var i=0; i < inputs.length; i++) {
         // Everytime one of the checkboxes are changed (clicked/unclicked) this funtion is run. 
         // TODO: For some reason, after modal close and balance refresh function, this no longer works.
-        inputs[i].onchange = function() {
-            //if(inputs[i].checked = false){
-              //inputMax.click();
-            //}
+        inputs[i].onchange = function() {            
+            // Inputs changed, one was selected or de-selected. 
+            // First reset send-total to 0, just in case the user entered a custom amount.
+            // Only do this if it's been selected, not  de-selected.
+            if(this.checked){
+              total.value = 0;
+            }
             // Recaclulating totals
             var checkedUtxosArray = new Array();
             console.log('inputs have changed, caclulating coinsum totals ');
@@ -372,14 +381,16 @@
           // Save it!
           var req = indexedDB.deleteDatabase(databaseName);
           req.onsuccess = function () {
-              console.log("Deleted Bitcoin Cash wallet successfully");
-              alert('Deleted Bitcoin Cash wallet successfully. Please reload the page to create a new wallet');
+              console.log("Deleted Bitcoin Cash wallet successfully.");
+              alert('Deleted Bitcoin Cash wallet successfully. Please reload the page (Ctrl + R) to create a new wallet. DO NOT SEND BCH to this current wallet unless you have backed up your mnemonic seed phrase.');
           };
           req.onerror = function () {
-              console.log("Couldn't delete database for BCH wallet");
+              console.log("Couldn't delete database for BCH wallet.");
+              alert("Couldn't delete database for BCH wallet.");
           };
           req.onblocked = function () {
               console.log("Couldn't delete database for BCH wallet due to the operation being blocked.");
+              alert("Couldn't delete database for BCH wallet due to the operation being blocked.");
           };
           
         } else {
@@ -669,6 +680,19 @@
         } // END IF THEREAREERRORS = FALSE;
 
     }
+    
+    // Date function
+    const d = new Date();
+    const formattedDate = d.toLocaleString("en-US", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
+    });
+    console.log('Date: ' + formattedDate);
+    //document.getElementById('date').innerHTML = formattedDate;
+
     
     // Custom function to enable/disable dark mode
     function toggleDarkMode() {
@@ -1191,6 +1215,44 @@ function colorLinks(hex)
     // verify, bitcoincash:qp2zvw3zpk5xx43w4tve7mtekd9kaxwj4uenq9eupv, II+rsv72D/KnZ6noO25WWtXnu3C2seCuJEJ6HwB3yalFTbeBjF1FSw6XuaOnxpwsrEXHimIdJB9k3aKsJaQB0L0=, Bitcoin Cash is Bitcoin
   }
   
+  
+  // Function to calculate the USD total for the send-total input. If the send-total (BCH) input is changed, this function will be kicked
+  // off to re-calc the USD totals.
+ function calcUsd() {
+
+    const filterNum = (str) => {
+      const numericalChar = new Set([ ".",",","0","1","2","3","4","5","6","7","8","9" ]);
+      str = str.split("").filter(char => numericalChar.has(char)).join("");
+      return str;
+  }
+  
+      total  = document.getElementById('send-total'),
+      totalUsd = document.getElementById('send-totalusd'),
+      bal = document.getElementById('bal');
+
+      bal = filterNum(bal.innerHTML);
+      console.log('balance = ' + bal);
+      
+            // Currently using price that was generated on page load.
+            var totalUsdVal = US.format(total.value * thebchPrice);
+            // Showing user the totals
+            totalUsd.innerHTML = totalUsdVal;
+            // Debug console log
+    //        console.log('total.value = '+ total.value);
+    
+    // Check if the user entered send amount is more than user balance and show error if so.
+    if( total.value > Number(bal)){
+      console.log('user doesnt have enough funds');
+      // show error
+      document.getElementById('needfunds').style.display = 'inline';
+    }else{
+      // dont show error
+      document.getElementById('needfunds').style.display = 'none';
+    }
+    
+  }
+  
+  
   const copyTextOld = async () => {
     try {
       let text = document.getElementById('cashaddr').innerText;
@@ -1233,26 +1295,28 @@ function colorLinks(hex)
   <header id="header" class="header fixed-top d-flex align-items-center">
 
     <div class="d-flex align-items-center justify-content-between">
-      <a href="index.html" class="logo d-flex align-items-center">
+      <a href="/" class="logo d-flex align-items-center">
         <img src="assets/img/logo.png" alt="">
         <span class="d-none d-lg-block">BCH Admin</span>
       </a>
       <i class="bi bi-list toggle-sidebar-btn"></i>
     </div><!-- End Logo -->
 
-    <!-- <div class="search-bar">
-      <form class="search-form d-flex align-items-center" method="POST" action="#">
+
+    <div class="search-bar">
+      <span id="date"></span>
+    <!--  <form class="search-form d-flex align-items-center" method="POST" action="#">
         <input type="text" name="query" placeholder="Search" title="Enter search keyword">
-        <button type="submit" title="Search"><i class="bi bi-search"></i></button>
+        <button type="submit" title="Search"><i class="bi bi-search"></i></button> -->
       </form>
-    </div> -->
+    </div> 
 
     <nav class="header-nav ms-auto">
       <ul class="d-flex align-items-center">
 
         <li class="nav-item dropdown" style="padding-right:20px">
           <label class="switch"> <span style="font-size:10pt"></span>
-            <input  type="checkbox" onClick="toggleDarkMode()" >
+            <input id="darkmode" type="checkbox" onClick="toggleDarkMode()" >
             <span class="slider"></span>
            </label>
            <!-- <i class="bi bi-search"></i> -->
@@ -1329,9 +1393,16 @@ function colorLinks(hex)
         <li class="nav-item dropdown pe-3">
 
           <a class="nav-link nav-profile d-flex align-items-center pe-0" data-bs-toggle="dropdown">
-            <img src="assets/img/AI_ART_Satoshi_psychedelic.jpeg" alt="Profile" class="rounded-circle">
+            <img id="profileImg" src="assets/img/satoshi3.jpg" alt="Profile" class="rounded-circle">
             <span class="d-none d-md-block dropdown-toggle ps-2">S. Nakamoto</span>
-          </a><!-- End Profile Iamge Icon -->
+          </a>
+          <script>
+          // Load one of 5 random Profile Images
+          // let profileImg = document.getElementById("profileImg");
+          // var num = Math.floor( Math.random() * 6);
+          // profileImg.src = 'assets/img/satoshi' + num + '.jpg';
+          
+          </script>
 
           <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
             <li class="dropdown-header">
@@ -1370,46 +1441,48 @@ function colorLinks(hex)
     <ul class="sidebar-nav" id="sidebar-nav">
 
       <li class="nav-item">
-        <a class="nav-link collapsed" href="#balanceheader" >
-          <i class="bi bi-currency-bitcoin"></i>
+        <a class="nav-link collapsed" href="#balance" >
+          <i style="transform: rotate(-0.03turn);" class="bi bi-currency-bitcoin"></i>
           <span >Balance</span>
         </a>
       </li>
       
             <li class="nav-item">
-        <a class="nav-link collapsed" href="#mnemoniclink">
-          <i class="bx bxs-leaf"></i>
+        <a class="nav-link collapsed" href="#mnemonic1">
+          <i class="bx bxs-lock"></i>
           <span >Mnemonic / Seed</span>
         </a>
       </li>
       
             <li class="nav-item">
-        <a class="nav-link collapsed" href="#depositheader" >
+        <a class="nav-link collapsed" href="#deposit" >
           <i class="bi bi-safe-fill"></i>
           <span >Deposit</span>
         </a>
       </li>
       
             <li class="nav-item">
-        <a class="nav-link collapsed" href="#coinsheader" >
+        <a class="nav-link collapsed" href="#coins" >
           <i class="bi bi-cash-coin"></i>
           <span >Coins / UTXOs</span>
         </a>
       </li>
       
             <li class="nav-item">
-        <a class="nav-link collapsed" href="#sendheader" >
+        <a class="nav-link collapsed" href="#sendBCH" >
           <i class="bi bi-send-check-fill"></i>
           <span>Send</span>
         </a>
       </li>
       
                   <li class="nav-item">
-        <a class="nav-link collapsed" href="#signverifyheader" >
+        <a class="nav-link collapsed" href="#signverify" >
           <i class="bi bi-check-lg"></i>
           <span>Sign / Verify</span>
         </a>
       </li>
+
+<hr width="65%" />
 
       <li class="nav-item">
         <a class="nav-link collapsed" onClick="faq()" >
@@ -1418,6 +1491,13 @@ function colorLinks(hex)
         </a>
       </li>
 
+      <li class="nav-item">
+        <a class="nav-link collapsed" href="https://electroncash.org" target="_blank">
+          <i class="bi bi-incognito"></i>
+          <span>Electron Cash Wallet</span>
+        </a>
+      </li>
+      
       <li class="nav-item">
         <a class="nav-link collapsed" href="https://cashfusion.org" target="_blank">
           <i class="bi bi-incognito"></i>
@@ -1434,12 +1514,13 @@ function colorLinks(hex)
   <main id="main" class="main">
 
     <div class="pagetitle">
-      <h1>BCH Wallet Dashboard</h1>
+      <h1>Wallet Dashboard</h1>
       <nav>
         <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a href="index.html">Home</a></li>
-          <li class="breadcrumb-item active">Dashboard</li>
+                    <li class="breadcrumb-item active"><a href="https://bitcoincash.org" target="_blank">Bitcoin Cash</a> </li>
           <li class="breadcrumb-item">Network: <span id='network'></span></li> 
+                   <!-- <li class="breadcrumb-item"><a href="index.html">Home</a></li> -->
+          <li class="breadcrumb-item">Derivation: <span id="derivation1"></span></li>
         </ol>
       </nav>
       <span style="font-size: 14px;
@@ -1480,7 +1561,7 @@ function colorLinks(hex)
                 </noscript>
 
                 <div class="card-body">
-                  <h5 id="balanceheader" class="card-title">Total Balance <span>| BCH </span></h5>
+                  <h5 id="balance" class="card-title">Total Balance <span>| BCH </span></h5>
 
                   <div class="d-flex align-items-center">
                     <div style="transform: rotate(-0.03turn);" class="success card-icon rounded-circle d-flex align-items-center justify-content-center">
@@ -1535,7 +1616,7 @@ function colorLinks(hex)
             <!-- Mnemonic Card -->
             <div class="col-xxl-4 col-xl-12">
 
-              <div class="card info-card customers-card" id="mnemoniclink">
+              <div class="card info-card customers-card" id="mnemonic1">
 
                <div class="filter">
                   <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
@@ -1554,7 +1635,7 @@ function colorLinks(hex)
                 </div> 
 
                 <div class="card-body" id="theMnemonic">
-                  <h5 class="card-title">Mnemonic <i style="font-size:18pt" id="lock" class="bx bxs-lock"></i><i id="lock-open" style="font-size:18pt;display:none;" class="bx bxs-lock-open"></i><span> | Seed Phrase<br /><a href="https://blog.ledger.com/understanding-crypto-addresses-and-derivation-paths/" target="_blank">Derivation</a>: <span id="derivation"></span></span></h5>
+                  <h5 class="card-title">Mnemonic <i style="font-size:18pt" id="lock" class="bx bxs-lock"></i><i id="lock-open" style="font-size:18pt;display:none;" class="bx bxs-lock-open"></i><span> | Seed Phrase<br /><a href="https://learnmeabitcoin.com/technical/derivation-paths" target="_blank">Derivation</a>: <span id="derivation"></span></span></h5>
 
                   <div class="d-flex align-items-center">
                <!--      <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
@@ -1592,7 +1673,7 @@ function colorLinks(hex)
                 </div> 
 
                 <div class="card-body">
-                  <h5  id="depositheader" class="card-title">Deposit Address <i style="font-size:18pt;transform: rotate(-0.03turn);" class="ri ri-bit-coin-fill"></i> <span>| Cash Address Format</span></h5>
+                  <h5  id="deposit" class="card-title">Deposit Address <i style="font-size:18pt;transform: rotate(-0.03turn);" class="ri ri-bit-coin-fill"></i> <span>| Cash Address Format</span></h5>
 
                   <div class="d-flex" style="padding-top:10px;">
                   <!--  <div style="transform: rotate(-0.02turn);" class="card-icon rounded-circle d-flex align-items-center justify-content-center">
@@ -1606,7 +1687,7 @@ function colorLinks(hex)
                      
                   <!-- </p> -->
                   <p style="text-align: center;">
-                   <img src="assets/img/wait.svg" style="width:60%;max-width:15em;" id="deposit">
+                   <img src="assets/img/wait.svg" style="width:60%;max-width:15em;" id="depositqr">
                   </p>
 
                   <p id="addresses">
@@ -1614,11 +1695,11 @@ function colorLinks(hex)
 
                   </p>
 
-                    <!-- Basic Modal style="display:none;"
+                    <!-- Basic Modal style="display:none;" -->
                     <button style="display:none;" id="modalbtn" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#utxoModal">
                       Test Incoming Transaction
                     </button>
-
+<!--
                     <button style="display:none;" onClick="createNotif()" id="notificationbtn" type="button" class="btn btn-primary">
                       Test Notification
                     </button> -->
@@ -1695,7 +1776,7 @@ function colorLinks(hex)
                               </h2>
                               <div id="faqsOne-3" class="accordion-collapse collapse" data-bs-parent="#faq-group-1">
                                 <div class="accordion-body">
-                                  <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">The BCH Admin code is open source</a>. The application is serverless and only uses client-side JavaScript and embedded scripts, provided by the <a href="https://mainnet.cash" target="_blank">mainnet-js library</a> to interact with the Bitcoin Cash blockchain and store the private keys within the Browser's IndexDB Storage. There is no malicious code; you are welcome to review the source code to confirm that statement. BCH Admin uses an SSL certificate to encrypt communications on the website. You can also just as easily download the source code and host the wallet locally. The code still reaches out to third party nodes to verify tx data and broadcast transactions. The private keys used to sign transactions do not ever leave your browser's local storage and are not saved anywhere else.
+                                  <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">The BCH Admin code is open source so you can verify what the code is doing</a>. The webpage is serverless and only uses HTML, CSS & <i>clearly written</i> client-side JavaScript: <a href="https://mainnet.cash" target="_blank">mainnet-js library</a> to interact with the Bitcoin Cash blockchain and store the private keys within the Browser's IndexDB Storage. There is no malicious code; you are welcome to review the source code to confirm that statement. BCH Admin uses an SSL certificate to encrypt communications on the website. You can also just as easily download the source code and host the wallet locally. The code still reaches out to third party nodes to verify tx data and broadcast transactions. The private keys used to sign transactions do not ever leave your browser's local storage and are not saved anywhere else.
                                 </div>
                               </div>
                             </div>
@@ -1739,7 +1820,7 @@ function colorLinks(hex)
                 </div> -->
 
                 <div class="card-body">
-                  <h5 id="coinsheader" class="card-title">Coins <i style="font-size:18pt;" class="bx bxs-coin-stack"></i> <span>| <span id="utxoLen" style="font-size:11pt;"></span>UTXOs - Unspent Transaction Outputs</span></h5>
+                  <h5 id="coins" class="card-title">Coins <i style="font-size:18pt;" class="bx bxs-coin-stack"></i> <span>| <span id="utxoLen" style="font-size:11pt;"></span>UTXOs - Unspent Transaction Outputs</span></h5>
 
                   <div class="align-items-center">
                 <!--    <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
@@ -1747,15 +1828,12 @@ function colorLinks(hex)
                     </div> -->
                     <div class="ps-3">
                       <!-- UTXO TABLE -->
-                      <table id="utxoTable" style="width:100%;" class="table table-borderless"> <!-- datatable NOT working (I think because the data is loaded after the datatables script runs. TODO FIX: Manually add in jQuery and run Datatables cmd for that utxoTable -->
+                      <table id="utxoTable" style="width:100%;" class="table table-borderless"> 
                           <tbody id="tbody">
                             <thead><tr><th scope='col'>Spend</th><th scope='col'>TxID</th><th scope='col'>Satoshis</th><th scope='col'>Height</th><th scope='col'>Status</th></tr></thead>
                           </tbody>
                       </table>
                       <!-- END UTXO TABLE -->
-                    <!--   <h5 id="mnemonic">Loading...</h5>
-                     <span class="text-danger small pt-1 fw-bold">12%</span> <span class="text-muted small pt-2 ps-1">decrease</span> -->
-
                     </div>
                   </div>
 
@@ -1769,7 +1847,7 @@ function colorLinks(hex)
 
             
              <!-- SEND BCH Card -->
-            <div class="col-xxl-4 col-xl-12">
+            <div id="send" class="col-xxl-4 col-xl-12">
 
               <div id="sendBCHcard" class="card info-card customers-card">
 
@@ -1787,7 +1865,7 @@ function colorLinks(hex)
                 </div> 
 
                 <div class="card-body">
-                  <h5 id="sendheader" class="card-title">Send BCH <i style="font-size:18pt;" class="ri ri-secure-payment-fill"></i> <span> | p2p electronic cash </span> <img src="assets/img/fluid-loader.gif" id="loader" style="display:none;padding-left:100px;width:200px;"><span id="send-error"></span></h5>
+                  <h5 class="card-title">Send BCH <i style="font-size:18pt;" class="ri ri-secure-payment-fill"></i> <span> | p2p electronic cash </span> <img src="assets/img/fluid-loader.gif" id="loader" style="display:none;padding-left:100px;width:200px;"><span id="send-error"></span></h5>
 
                   <div class="d-flex align-items-center">
                <!--     <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
@@ -1816,10 +1894,15 @@ function colorLinks(hex)
                       <div class="col-md-12">
                         <div class="form-floating">
                           <!-- TODO: Make send-total input readonly and add logic for selecting UTXOs -->
-                          <input type="number" class="form-control" id="send-total" name="amount" min=0.00000001 value=0.00000000 step="0.00000001" required> ($<span id="send-totalusd">0.00</span> USD) 
+                          <input type="number" class="form-control" id="send-total" name="amount" min=0.00000001 value=0.00000000 step="0.00000001" oninput="calcUsd()" required> ($<span id="send-totalusd">0.00</span> USD) 
+                           <br />
                             <div style="" class="invalid-feedback">
                               Enter a valid amount over 0.
                             </div>
+                            <div style="display:none" id="needfunds" class="invalid-feedback">
+                              User balance is not enough. Send more BCH to your deposit address.
+                            </div>
+                            
                           <br /><input type="checkbox" id="sendmax" name="sendmax"> Send Max
                         <!--  <input type="hidden" id="send-total-amount" value="0.00000000" readonly> -->
                           
