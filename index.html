@@ -315,7 +315,8 @@
 							      
           if(inputMax.checked === true){
             // first reset send-total to 0, in case user entered custom amounts.
-            total.value = 0;
+           // total.value = 0;
+          
           // if it's not already selected, click the checkbox.
             if(inputs[i].checked === false){
               inputs[i].click();
@@ -337,11 +338,12 @@
         // TODO: For some reason, after modal close and balance refresh function, this no longer works.
         inputs[i].onchange = function() {            
             // Inputs changed, one was selected or de-selected. 
+            
             // First reset send-total to 0, just in case the user entered a custom amount.
             // Only do this if it's been selected, not  de-selected.
-            if(this.checked){
-              total.value = 0;
-            }
+          //  if(this.checked){
+          //   total.value = 0;
+          //  }
             // Recaclulating totals
             var checkedUtxosArray = new Array();
             console.log('inputs have changed, caclulating coinsum totals ');
@@ -682,6 +684,7 @@
     }
     
     // Date function
+  function loadDate(){
     const d = new Date();
     const formattedDate = d.toLocaleString("en-US", {
       day: "numeric",
@@ -691,9 +694,9 @@
       minute: "2-digit"
     });
     console.log('Date: ' + formattedDate);
-    //document.getElementById('date').innerHTML = formattedDate;
-
-    
+    document.getElementById('thedate').innerHTML = '' + formattedDate;
+  }
+  
     // Custom function to enable/disable dark mode
     function toggleDarkMode() {
       console.log('Toggling DARK mode');
@@ -1304,10 +1307,13 @@ function colorLinks(hex)
 
 
     <div class="search-bar">
-      <span id="date"></span>
+      <span style="font-size:10pt;color:#899bbd;" id="thedate"></span>
     <!--  <form class="search-form d-flex align-items-center" method="POST" action="#">
         <input type="text" name="query" placeholder="Search" title="Enter search keyword">
         <button type="submit" title="Search"><i class="bi bi-search"></i></button> -->
+        <script type="text/javascript">
+         loadDate();
+        </script>
       </form>
     </div> 
 
@@ -1893,8 +1899,8 @@ function colorLinks(hex)
                       <!-- AMOUNT -->
                       <div class="col-md-12">
                         <div class="form-floating">
-                          <!-- TODO: Make send-total input readonly and add logic for selecting UTXOs -->
-                          <input type="number" class="form-control" id="send-total" name="amount" min=0.00000001 value=0.00000000 step="0.00000001" oninput="calcUsd()" required> ($<span id="send-totalusd">0.00</span> USD) 
+                          <!-- TODO: Make send-total input readonly and add logic for selecting UTXOs oninput="calcUsd()" -->
+                          <input type="number" class="form-control" id="send-total" name="amount" min=0.00000001 value=0.00000000 step="0.00000001" readonly required> ($<span id="send-totalusd">0.00</span> USD) 
                            <br />
                             <div style="" class="invalid-feedback">
                               Enter a valid amount over 0.
@@ -1903,6 +1909,7 @@ function colorLinks(hex)
                               User balance is not enough. Send more BCH to your deposit address.
                             </div>
                             
+                          <br />  <input type="checkbox" onClick="sendCustomAmount()" id="customamount" name="customamount"> Send Custom Amount <br />
                           <br /><input type="checkbox" id="sendmax" name="sendmax"> Send Max
                         <!--  <input type="hidden" id="send-total-amount" value="0.00000000" readonly> -->
                           
@@ -1918,7 +1925,94 @@ function colorLinks(hex)
                       </div>
                     </form><!-- End floating Labels Form -->
 
+                    <!-- Custom JavaScript for Sending Custom BCH amount -->
+                    <script type="text/javascript">
                     
+                    function sendCustomAmount() {
+                      let checked = document.getElementById('customamount').checked;
+                      var sendTotal = document.getElementById('send-total'),
+                        totalUsd = document.getElementById('send-totalusd');
+
+                      
+                      // if custom amount has been clicked, make send-total editable and disable the utxo checkboxes.
+                      if(checked){
+                        sendTotal.readOnly = false;
+                        
+                        //forEach
+                        var inputs = document.getElementsByClassName('coinsum');
+                        
+                        var arrayLength = inputs.length;
+                        for (var i = 0; i < arrayLength; i++) {
+                          let input = inputs[i];
+                                                    
+                          // uncheck all checked utxos and reset totals via clicking the already checked boxes.
+                          if(input.checked == true){
+                            input.click();
+                          }
+                          // disable utxo checkboxes.
+                          input.disabled = true;
+                        };
+
+                        
+                        
+                        
+                        // start calcUsd
+                       sendTotal.addEventListener('input', function calcUsd() {
+
+    const filterNum = (str) => {
+      const numericalChar = new Set([ ".",",","0","1","2","3","4","5","6","7","8","9" ]);
+      str = str.split("").filter(char => numericalChar.has(char)).join("");
+      return str;
+  }
+  
+      total  = document.getElementById('send-total'),
+      totalUsd = document.getElementById('send-totalusd'),
+      bal = document.getElementById('bal');
+
+      bal = filterNum(bal.innerHTML);
+      console.log('balance = ' + bal);
+      
+            // Currently using price that was generated on page load.
+            var totalUsdVal = US.format(total.value * thebchPrice);
+            // Showing user the totals
+            totalUsd.innerHTML = totalUsdVal;
+            // Debug console log
+    //        console.log('total.value = '+ total.value);
+    
+    // Check if the user entered send amount is more than user balance and show error if so.
+    if( total.value > Number(bal)){
+      console.log('user doesnt have enough funds');
+      // show error
+      document.getElementById('needfunds').style.display = 'inline';
+    }else{
+      // dont show error
+      document.getElementById('needfunds').style.display = 'none';
+    }
+    
+  }, true); // end calcUsd();
+  
+  
+                      }else{ // if custom amount has been unchecked, make send-total non-editable and re-enable the utxo checkboxes.
+                        // Also need to CLEAR the send-total and usd.
+
+                        sendTotal.readOnly = true;
+                        sendTotal.value = 0.00000000;
+                        totalUsd.innerHTML = '0';
+                        
+                        //forEach
+                        var inputs = document.getElementsByClassName('coinsum');
+                        
+                        var arrayLength = inputs.length;
+                        for (var i = 0; i < arrayLength; i++) {
+                          let input = inputs[i];
+
+                          // re-enable utxo checkboxes.
+                          input.disabled = false;
+                        };
+                      }
+                    }
+                    
+                    </script>
                     
                   </div>
 
