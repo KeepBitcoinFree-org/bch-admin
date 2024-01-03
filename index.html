@@ -1661,7 +1661,7 @@ function colorLinks(hex)
             
             
             <!-- Deposit Address Card -->
-            <div class="col-xxl-4 col-xl-12">
+            <div class="col-xxl-8 col-xl-12">
 
               <div class="card info-card customers-card" >
 
@@ -1782,7 +1782,9 @@ function colorLinks(hex)
                               </h2>
                               <div id="faqsOne-3" class="accordion-collapse collapse" data-bs-parent="#faq-group-1">
                                 <div class="accordion-body">
-                                  <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">The BCH Admin code is open source so you can verify what the code is doing</a>. The webpage is serverless and only uses HTML, CSS & <i>clearly written</i> client-side JavaScript: <a href="https://mainnet.cash" target="_blank">mainnet-js library</a> to interact with the Bitcoin Cash blockchain and store the private keys within the Browser's IndexDB Storage. There is no malicious code; you are welcome to review the source code to confirm that statement. BCH Admin uses an SSL certificate to encrypt communications on the website. You can also just as easily download the source code and host the wallet locally. The code still reaches out to third party nodes to verify tx data and broadcast transactions. The private keys used to sign transactions do not ever leave your browser's local storage and are not saved anywhere else.
+                                  <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">The BCH Admin code is open source so you can verify what the code is doing</a>. The webpage is serverless and only uses HTML, CSS & <i>clearly written</i> client-side JavaScript: <a href="https://mainnet.cash" target="_blank">mainnet-js library</a> to interact with the Bitcoin Cash blockchain and store the private keys within the Browser's IndexDB Storage. There is no malicious code; you are welcome to review the source code to confirm that statement. BCH Admin uses an SSL certificate to encrypt communications on the website. You can also just as easily download the source code and host the wallet locally. The code still reaches out to third party nodes to verify tx data and broadcast transactions. The private keys used to sign transactions do not ever leave your browser's local storage and are not saved anywhere else. 
+                                  <br /><br />
+                                  * Please note that this software is offered AS IS with absolutely NO GAURANTEE that your funds will be safe. WE (KeepBitcoinFree.org) DOES NOT HOLD YOUR PRIVATE KEYS AND WE CANNOT, AND DO NOT WISH TO, STEAL YOUR Bitcoin Cash, BCH. This application is serverless, all keys are stored in your browser. Back up your seed phrase and derivation to restore your wallet on any other Bitcoin Cash wallet.
                                 </div>
                               </div>
                             </div>
@@ -1808,7 +1810,7 @@ function colorLinks(hex)
             </div> <!-- End Row? -->
             
             <!-- UTXO DATATABLE Card -->
-            <div class="col-xxl-4 col-xl-12">
+            <div class="col-xxl-12 col-xl-12">
 
               <div id="utxocard" class="card recent-sales overflow-auto">
 <!--
@@ -1853,7 +1855,7 @@ function colorLinks(hex)
 
             
              <!-- SEND BCH Card -->
-            <div id="send" class="col-xxl-4 col-xl-12">
+            <div id="send" class="col-xxl-8 col-xl-12">
 
               <div id="sendBCHcard" class="card info-card customers-card">
 
@@ -1921,7 +1923,7 @@ function colorLinks(hex)
                       <span style="font-size:10pt;">* Fees will be subtracted from the total to be sent. Fees are always low with Bitcoin Cash.</span>
                       <div class="text-center">
                         <button onClick="sendBCH()" type="button" class="btn btn-primary">Submit</button>
-                        <button id="resetSendForm" type="reset" class="btn btn-secondary">Reset</button>
+                        <div id="resetSendForm" onClick="resetSendBCHform()" class="btn btn-secondary">Reset</div>
                       </div>
                     </form><!-- End floating Labels Form -->
 
@@ -2012,6 +2014,45 @@ function colorLinks(hex)
                       }
                     }
                     
+                    function resetSendBCHform() {
+                      // set vars
+                      var resetBtn = document.getElementById('resetSendForm'),
+                      sendtotal = document.getElementById('send-total'),
+                      totalUsd = document.getElementById('send-totalusd'),
+                      sendBCHform = document.getElementById('sendbchform'),
+                      coinsum = document.getElementsByClassName('coinsum'),
+                      customamount = document.getElementById('customamount');
+                      
+                   //   console.log('customamount.checked = ' + customamount.checked);
+                      if(customamount.checked){
+                        
+                          // there might be a custom input, reset the form values and the usd calcuations.
+                        //sendBCHform.reset();
+                        sendtotal.value = 0.00000000;
+                        totalUsd.innerHTML = '0'; 
+                        
+                        
+                      }else{
+                                              // check if utxos are selected and de-select them, if so.
+
+                                                //forEach
+                        var inputs = document.getElementsByClassName('coinsum');
+                        
+                        var arrayLength = inputs.length;
+                        for (var i = 0; i < arrayLength; i++) {
+                          let input = inputs[i];
+
+                          // de-select utxo checkboxes if they are checked
+                          if(input.checked){
+                            input.click();
+                          }
+                        }                    
+                      }
+                      
+                      
+                    }
+                    
+                    
                     </script>
                     
                   </div>
@@ -2023,7 +2064,7 @@ function colorLinks(hex)
 
 
           <!-- Start SIGN / VERIFY MESSAGE CARD -->
-          <div class="col-xxl-4 col-xl-12">
+          <div class="col-xxl-12 col-xl-12">
              <div id="signverify" class="card info-card customers-card">
 
                <div class="filter">
