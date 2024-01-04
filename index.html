@@ -33,11 +33,12 @@
 <!--
   * ========================================
   * Created by KeepBitcoinFree.org for use as a Bitcoin Cash Web3 Wallet - 
-  * Currently using the mainnet-js library & the library hosted locally. There is no backend/server - https://mainnet.cash
-  * All Private Keys are Stored and used locally in the browser. The "webapp" is flatfile using only clientside Javascript. 
-  * There is no server and no database. Only the index.html file is hosted on a server. 
+  * Currently using the mainnet-js library & the library is hosted locally to the app - https://mainnet.cash
+  * The applcation is serverless. All Private Keys are stored locally in the browser's IndexedDB Storage. The website uses only clientside Javascript for everything.
+  * There is no server and no database. Only the html, css & javascript files are hosted on a server. 
   *
-  * For now 1 cookie/browser = one user. Keys are stored within the indexDB in the local user's browser.
+  * For now 1 cookie/browser = one user. Keys are stored within the indexedDB in the local user's browser.
+  *
   * Using a private session will create a new wallet each time the website is opened.
   * TODO: Maybe add ability to create user & log-in.
   * TODO: Add functionality to create multiple wallets for a user.
@@ -52,13 +53,15 @@
 
 <!-- TODO: Generate DataTable and Setup Checkboxes only after wallet utxos have been hydrated. Right now it is just waiting 3-4 seconds for each to run. -->
 
-  <!-- CUSTOM SCRIPTS for BITCOIN CASH WALLET -->
-  <script src="assets/js/indexeddb-storage-2.2.5.js"></script>  
-  <script src="assets/js/mainnet-2.2.5.js"></script>
+  <!-- CUSTOM SCRIPTS for BITCOIN CASH WALLET using MAINNET.CASH -->
+  <script src="assets/js/indexeddb-storage-2.3.0.js"></script>  
+  <script src="assets/js/mainnet-2.3.0.js"></script>
   
+  <!-- Scripts for jQuery & DataTables -->
   <script src="assets/js/jquery-3.6.4.min.js"></script>
   <script src="assets/js/jquery.dataTables.min.js"></script>
 
+  <!-- Custom Wallet Functionality JavaScript - written by Zatoshi - https://github.com/KeepBitcoinFree-org -->
   <script type="text/javascript">
       
       // Global Vars \\
@@ -331,7 +334,7 @@
         } // END SENDMAX FOR
       }
       
-      console.log('INPUTS.length = ' + inputs.length);
+      //console.log('INPUTS.length = ' + inputs.length);
 							
       for (var i=0; i < inputs.length; i++) {
         // Everytime one of the checkboxes are changed (clicked/unclicked) this funtion is run. 
@@ -391,8 +394,8 @@
               alert("Couldn't delete database for BCH wallet.");
           };
           req.onblocked = function () {
-              console.log("Couldn't delete database for BCH wallet due to the operation being blocked.");
-              alert("Couldn't delete database for BCH wallet due to the operation being blocked.");
+              console.log("Couldn't delete database for BCH wallet due to the operation being blocked. It probably deleted it anyways though.");
+              // alert("Couldn't delete database for BCH wallet due to the operation being blocked.");
           };
           
         } else {
@@ -463,9 +466,9 @@
                 // add to HTML
                 console.log('txData = ' + txData);
                 let txHash = txData.txId;
-
+                
                 let txDataHTML = 'Transaction sent successfully. <br />Tx Hash => <a href="https://blockchair.com/bitcoin-cash/transaction/' + txHash + '" target="_blank">' + txHash + '</a>. <br /><br />';
-
+                
                 let txDataSpan = document.getElementById("txdata");
                 txDataSpan.style.display = "inline";
                 txDataSpan.innerHTML = txDataHTML;
@@ -478,9 +481,8 @@
                 document.getElementById('balusd').innerHTML = US.format(txData.balance.usd);
                 document.getElementById('sats').innerHTML = US.format(txData.balance.sat);
 
-                // Reset send BCH form
-                document.getElementById("resetSendForm").click();
-                // TODO: reset all checkboxes and values.
+                // Reset the BCH Send Form
+                resetSendBCHform();
                 
               }
 
@@ -494,7 +496,7 @@
             }
 
 
-          }else{ //sendMax wasn't checked.
+          }else{ //sendMax wasn't checked. Either UTXO selection or Custom amount.
             console.log('SendMax wasnt checked. Checking for utxo selections.');
 
             //get utxo selection info
@@ -548,44 +550,14 @@
               document.getElementById('send-error').innerHTML = null;
 
               try{
-                console.log('trying NORMAL SEND with options: sendRequestOptions');
-                
-                //var requests = 
-                  //{
-                    //cashaddr: sendToAddr,
-                    //value: Number(sendTotal),
-                    //unit: 'bch',
-                    //utxoIds: inputArray
-                  //};
-                  
-                  //console.log(requests);
-                  //console.log(sendRequestOptions);
-                  
-                const txData = await wallet.send([
-                  {
-                    cashaddr: sendToAddr,
-                    value: Number(sendTotal),
-                    unit: 'bch',
-                    options: sendRequestOptions
-                  }
-                ]); // end txData
-                
-                // Trying Advanced Send Technique
-                //const encodedTransaction = await wallet.encodeTransaction(
-                  //requests, // send requests as in `send` method
-                  //false, // discard change
-                  //sendRequestOptions // options as described above
-                //);
-
-                //const txId = await wallet.submitTransaction(
-                  //encodedTransaction,
-                  //awaitTransactionPropagation // as in options.awaitTransactionPropagation
-                //);
+  
+                // Functioning METHOD OF SENDING WITH SENDMAX - LIMITED TO ONLY THE SELECTED UTXOs.
+                const txData = await wallet.sendMax(sendToAddr, sendRequestOptions);
 
                 // if it returns a successful txData obj, lets pass this info back to HTML
                 if(txData){
                   // add to HTML
-                 // console.log('txData = ' + txData);
+                  console.log('TX SUCCESSFUL. txData = ' + txData);
                   let txHash = txData.txId;
 
                   let txDataHTML = 'Transaction sent successfully. <br />Tx Hash => <a href="https://blockchair.com/bitcoin-cash/transaction/' + txHash + '" target="_blank">' + txHash + '</a>. <br /><br />';
@@ -595,16 +567,16 @@
                   txDataSpan.style.display = "block";
                   // TODO: Create a Modal or alert for notification of tx sent info.
 
-                // Hide loader GIF
-                document.getElementById("loader").style.display = "none";
+                  // Hide loader GIF
+                  document.getElementById("loader").style.display = "none";
 
                   // Display all balance info with the returned balance - BCH, USD & SATS
                   document.getElementById('bal').innerHTML = txData.balance.bch + ' BCH';
                   document.getElementById('balusd').innerHTML = US.format(txData.balance.usd);
                   document.getElementById('sats').innerHTML = US.format(txData.balance.sat);
 
-                  // Reset send BCH form
-                  document.getElementById("resetSendForm").click();
+                  // Reset the BCH Send Form
+                  resetSendBCHform();
                 }
 
               }catch(error){
@@ -625,8 +597,8 @@
               document.getElementById('send-error').innerHTML = null;
 
               try {
-                  console.log('continuing with a SIMPLE SEND of ' + Number(sendTotal) + ' to ' + sendToAddr + '.');
-                  // SIMPLE SEND with just an address and the amount in BCH.
+                  console.log('continuing with a ( SIMPLE SEND / Custom Amount Send ) of ' + Number(sendTotal) + ' to ' + sendToAddr + '.');
+                  // SIMPLE SEND with just an address and the custom amount in BCH.
                  const txData = await wallet.send([
                   {
                     cashaddr: sendToAddr,
@@ -656,10 +628,9 @@
                   document.getElementById('balusd').innerHTML = US.format(txData.balance.usd);
                   document.getElementById('sats').innerHTML = US.format(txData.balance.sat);
 
-                  // Reset send BCH form
-                  document.getElementById("resetSendForm").click();
+                  // Reset the BCH Send Form
+                  resetSendBCHform();
 
-                  //
                 } // end if(txData)
 
               }catch(error){ // catch send error
@@ -1025,7 +996,7 @@ function colorLinks(hex)
     function copyText() {
       let text = document.getElementById('cashaddr').innerText;
       console.log('text to copy is... ' + text);
-      navigator.clipboard.writeText(text);
+      navigator.clipboard.writeText(text.trim());
     }
     
 
@@ -1283,7 +1254,7 @@ function colorLinks(hex)
       setTimeout(function(){
         let table = new DataTable('#utxoTable');
         $(".dataTables_empty").css("display", "none");
-      }, 3000);
+      }, 2000);
 
     });
 
@@ -2126,236 +2097,6 @@ function colorLinks(hex)
                   </div>
           </div>
           <!-- End SIGN / VERIFY MESSAGE CARD -->
-
-            <!-- Reports 
-            <div class="col-12">
-              <div class="card">
-
-                <div class="filter">
-                  <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
-                  <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-                    <li class="dropdown-header text-start">
-                      <h6>Filter</h6>
-                    </li>
-
-                    <li><a class="dropdown-item" href="#">Today</a></li>
-                    <li><a class="dropdown-item" href="#">This Month</a></li>
-                    <li><a class="dropdown-item" href="#">This Year</a></li>
-                  </ul>
-                </div>
-
-                <div class="card-body">
-                  <h5 class="card-title">Reports <span>/Today</span></h5>
-
-                 
-                  <div id="reportsChart"></div>
-
-                  <script>
-                    document.addEventListener("DOMContentLoaded", () => {
-                      new ApexCharts(document.querySelector("#reportsChart"), {
-                        series: [{
-                          name: 'Sales',
-                          data: [31, 40, 28, 51, 42, 82, 56],
-                        }, {
-                          name: 'Revenue',
-                          data: [11, 32, 45, 32, 34, 52, 41]
-                        }, {
-                          name: 'Customers',
-                          data: [15, 11, 32, 18, 9, 24, 11]
-                        }],
-                        chart: {
-                          height: 350,
-                          type: 'area',
-                          toolbar: {
-                            show: false
-                          },
-                        },
-                        markers: {
-                          size: 4
-                        },
-                        colors: ['#4154f1', '#2eca6a', '#ff771d'],
-                        fill: {
-                          type: "gradient",
-                          gradient: {
-                            shadeIntensity: 1,
-                            opacityFrom: 0.3,
-                            opacityTo: 0.4,
-                            stops: [0, 90, 100]
-                          }
-                        },
-                        dataLabels: {
-                          enabled: false
-                        },
-                        stroke: {
-                          curve: 'smooth',
-                          width: 2
-                        },
-                        xaxis: {
-                          type: 'datetime',
-                          categories: ["2018-09-19T00:00:00.000Z", "2018-09-19T01:30:00.000Z", "2018-09-19T02:30:00.000Z", "2018-09-19T03:30:00.000Z", "2018-09-19T04:30:00.000Z", "2018-09-19T05:30:00.000Z", "2018-09-19T06:30:00.000Z"]
-                        },
-                        tooltip: {
-                          x: {
-                            format: 'dd/MM/yy HH:mm'
-                          },
-                        }
-                      }).render();
-                    });
-                  </script>
-
-
-                </div>
-
-              </div>
-            </div><!-- End Reports -->
-
-            <!-- Recent Sales 
-            <div class="col-12">
-              <div class="card recent-sales overflow-auto">
-
-                <div class="filter">
-                  <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
-                  <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-                    <li class="dropdown-header text-start">
-                      <h6>Filter</h6>
-                    </li>
-
-                    <li><a class="dropdown-item" href="#">Today</a></li>
-                    <li><a class="dropdown-item" href="#">This Month</a></li>
-                    <li><a class="dropdown-item" href="#">This Year</a></li>
-                  </ul>
-                </div>
-
-                <div class="card-body">
-                  <h5 class="card-title">Recent Sales <span>| Today</span></h5>
-
-                  <table class="table table-borderless datatable">
-                    <thead>
-                      <tr>
-                        <th scope="col">#</th>
-                        <th scope="col">Customer</th>
-                        <th scope="col">Product</th>
-                        <th scope="col">Price</th>
-                        <th scope="col">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <th scope="row"><a href="#">#2457</a></th>
-                        <td>Brandon Jacob</td>
-                        <td><a href="#" class="text-primary">At praesentium minu</a></td>
-                        <td>$64</td>
-                        <td><span class="badge bg-success">Approved</span></td>
-                      </tr>
-                      <tr>
-                        <th scope="row"><a href="#">#2147</a></th>
-                        <td>Bridie Kessler</td>
-                        <td><a href="#" class="text-primary">Blanditiis dolor omnis similique</a></td>
-                        <td>$47</td>
-                        <td><span class="badge bg-warning">Pending</span></td>
-                      </tr>
-                      <tr>
-                        <th scope="row"><a href="#">#2049</a></th>
-                        <td>Ashleigh Langosh</td>
-                        <td><a href="#" class="text-primary">At recusandae consectetur</a></td>
-                        <td>$147</td>
-                        <td><span class="badge bg-success">Approved</span></td>
-                      </tr>
-                      <tr>
-                        <th scope="row"><a href="#">#2644</a></th>
-                        <td>Angus Grady</td>
-                        <td><a href="#" class="text-primar">Ut voluptatem id earum et</a></td>
-                        <td>$67</td>
-                        <td><span class="badge bg-danger">Rejected</span></td>
-                      </tr>
-                      <tr>
-                        <th scope="row"><a href="#">#2644</a></th>
-                        <td>Raheem Lehner</td>
-                        <td><a href="#" class="text-primary">Sunt similique distinctio</a></td>
-                        <td>$165</td>
-                        <td><span class="badge bg-success">Approved</span></td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                </div>
-
-              </div>
-            </div><!-- End Recent Sales -->
-
-            <!-- Top Selling 
-            <div class="col-12">
-              <div class="card top-selling overflow-auto">
-
-                <div class="filter">
-                  <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
-                  <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-                    <li class="dropdown-header text-start">
-                      <h6>Filter</h6>
-                    </li>
-
-                    <li><a class="dropdown-item" href="#">Today</a></li>
-                    <li><a class="dropdown-item" href="#">This Month</a></li>
-                    <li><a class="dropdown-item" href="#">This Year</a></li>
-                  </ul>
-                </div>
-
-                <div class="card-body pb-0">
-                  <h5 class="card-title">Top Selling <span>| Today</span></h5>
-
-                  <table class="table table-borderless">
-                    <thead>
-                      <tr>
-                        <th scope="col">Preview</th>
-                        <th scope="col">Product</th>
-                        <th scope="col">Price</th>
-                        <th scope="col">Sold</th>
-                        <th scope="col">Revenue</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <th scope="row"><a href="#"><img src="assets/img/product-1.jpg" alt=""></a></th>
-                        <td><a href="#" class="text-primary fw-bold">Ut inventore ipsa voluptas nulla</a></td>
-                        <td>$64</td>
-                        <td class="fw-bold">124</td>
-                        <td>$5,828</td>
-                      </tr>
-                      <tr>
-                        <th scope="row"><a href="#"><img src="assets/img/product-2.jpg" alt=""></a></th>
-                        <td><a href="#" class="text-primary fw-bold">Exercitationem similique doloremque</a></td>
-                        <td>$46</td>
-                        <td class="fw-bold">98</td>
-                        <td>$4,508</td>
-                      </tr>
-                      <tr>
-                        <th scope="row"><a href="#"><img src="assets/img/product-3.jpg" alt=""></a></th>
-                        <td><a href="#" class="text-primary fw-bold">Doloribus nisi exercitationem</a></td>
-                        <td>$59</td>
-                        <td class="fw-bold">74</td>
-                        <td>$4,366</td>
-                      </tr>
-                      <tr>
-                        <th scope="row"><a href="#"><img src="assets/img/product-4.jpg" alt=""></a></th>
-                        <td><a href="#" class="text-primary fw-bold">Officiis quaerat sint rerum error</a></td>
-                        <td>$32</td>
-                        <td class="fw-bold">63</td>
-                        <td>$2,016</td>
-                      </tr>
-                      <tr>
-                        <th scope="row"><a href="#"><img src="assets/img/product-5.jpg" alt=""></a></th>
-                        <td><a href="#" class="text-primary fw-bold">Sit unde debitis delectus repellendus</a></td>
-                        <td>$79</td>
-                        <td class="fw-bold">41</td>
-                        <td>$3,239</td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                </div>
-
-              </div>
-            </div><!-- End Top Selling -->
 
           </div>
         </div><!-- End Left side columns -->

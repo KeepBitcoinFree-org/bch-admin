@@ -1253,6 +1253,18 @@ width: 420px;
 /* width: 600px; This should allow width to be 100% instead to conform to mobile screens as well */
 } 
 
+@media (min-width: 992px) {
+  .modal-content {
+  width:800px;
+  }
+}
+
+@media (min-width: 800px) {
+  .modal-content {
+  width:500px;
+  }
+}
+
 #send-error {
   color:red;
 }
