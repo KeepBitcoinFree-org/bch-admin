@@ -32,17 +32,16 @@
   <link href="assets/css/style.css" rel="stylesheet">
 <!--
   * ========================================
-  * Created by KeepBitcoinFree.org for use as a Bitcoin Cash Web3 Wallet - 
+  * Created by KeepBitcoinFree.org for use as an internal Bitcoin Cash Web Wallet - 
   * Currently using the mainnet-js library & the library is hosted locally to the app - https://mainnet.cash
   * The applcation is serverless. All Private Keys are stored locally in the browser's IndexedDB Storage. The website uses only clientside Javascript for everything.
-  * There is no server and no database. Only the html, css & javascript files are hosted on a server. 
+  * There is no server and no database. Only the html, css & javascript files are hosted on a server. These files can be downloaded and hosted locally, only an internet connection is required to create a wallet and send/recieve BCH.
   *
-  * For now 1 cookie/browser = one user. Keys are stored within the indexedDB in the local user's browser.
+  * For now 1 cookie/browser/website (combo) = one user/wallet. Keys are stored within the indexedDB in the local user's browser and local to that device, browser & website.
   *
   * Using a private session will create a new wallet each time the website is opened.
-  * TODO: Maybe add ability to create user & log-in.
-  * TODO: Add functionality to create multiple wallets for a user.
-  * TODO: Add functionality to generate & print a PAPER WALLET.
+  * TODO: *Maybe* add ability to create user & log-in so the user could create multiple wallets for each user.
+  * TODO: Add functionality to generate & print a PAPER WALLET. Currently link to paper.keepbitcoinfree.org
   * TODO: Add functionality to restore a wallet from seed
   * TODO: Add functionality for PointOfSale system. Use the xpub key to display a screen that has a new address for each order. Watch that address while open, etc.
   * From the xPub, we generate addresses starting from the first address in the sequence, and a new address from the next one in the sequence for every new order, using the BIP44 derivation path.
@@ -169,6 +168,22 @@
         } // END DataTable UTXO HYDRATION
 
 
+// TODO: Create separate page for Point of Sale (PoS) system/functionality. Then use the below to essentially pause everything to wait for
+// the TX. *SEND INFO FOR THE (newly generated) ADDRESS & AMOUNT to another page with just the address & amount, which also gives a SUCCESS MSG.
+
+
+//You can also wait for a wallet transaction and halt the program execution until it arrives:
+
+//const options = {
+  //getTransactionInfo: true,
+  //getBalance: false,
+  //txHash: undefined
+//}
+//const response = await wallet.waitForTransaction(options);
+
+
+
+
         
       //  Get usd price of 1 BCH to display
       let bchPrice = await convert(1, "bch", "usd");
@@ -227,13 +242,20 @@
         document.getElementById("mnemonic").innerHTML = wallet.mnemonic;      
         document.getElementById("network").innerHTML = wallet.network;
         
-       // Watch Main Deposit Addr for any new incoming transactions // IF IT ISN'T WORKING REFRESH THE PAGE.
-       console.log('watching address for new txHash');
+       // Watch Main Deposit Addr for any new incoming transactions // If it isn't working then the websocket connections to the spv nodes 
+       // probably timed out. Refresh the page to get new connections. 
+       console.log('Watching address for new transactions');
 
-       wallet.watchAddress((txHash) => {
-          console.log('New Transaction recieved. TX HASH = ' + txHash);
+      // wallet.watchAddress((txHash) => {
+      
+      wallet.watchAddressTransactions((tx) => {
+    
+          let txString = JSON.stringify(tx, null, 4); 
+
+          console.log('New Transaction recieved. TX Details = ' + txString);
           // Should watch only for INCOMING TXs.
 
+          let txHash = tx.txid;
           // window.alert('New unspent transaction output recieved. TX HASH = ' + txHash)
           
           // Wallet does not detect utxos on addresses generated, other than the first, or main deposit address.
@@ -338,7 +360,8 @@
 							
       for (var i=0; i < inputs.length; i++) {
         // Everytime one of the checkboxes are changed (clicked/unclicked) this funtion is run. 
-        // TODO: For some reason, after modal close and balance refresh function, this no longer works.
+        // ISSUE: For some reason, after modal close and balance refresh function runs successfully, this no longer works to monitor input checkboxes.
+        // TODO: Test out methods of onclick or onchange or oninput. Right now this is nested inside of a timeout func.
         inputs[i].onchange = function() {            
             // Inputs changed, one was selected or de-selected. 
             
@@ -375,7 +398,8 @@
         }
       }, 5000);
     
-    // Function to allow user to Delete their bitcoincash wallet (and start anew)
+    // Function to allow user to Delete their bitcoincash wallet (and start anew). For some reason, it says it fails to delete, but it does.
+    // TODO: force a reload of the page after delete so user doesn't accidentally send to old wallet.
     function deleteWallet() {
 
       let databaseName = "bitcoincash";
@@ -410,8 +434,6 @@
     function isHidden(el) {
         return (el.offsetParent === null)
     }
-
-    // TODO: onChange for send amount input - re-calc the USD value. (instead of doing it manually within utxo selection - coinsum)
 
     // *** Function to SEND BCH ***
     // #
@@ -972,11 +994,6 @@ function colorLinks(hex)
           document.getElementById('notifLength').innerHTML = notifLength2;
           document.getElementById('notifLength2').innerHTML = notifLength2;
 
-
-
-                    // test txHash
-          //let txHash = "234c9273s47923849832b84923874928739487292s38a47223423423a834";
-
           let notifications = 
           '<li class="notification-item"  style="overflow:scroll;"> <i class="bi bi-exclamation-circle text-warning"></i><div> <h4>New TX Detected!</h4> <p>TXID/Hash is ' + txHash + '</p> <p><a href="https://blockchair.com/bitcoin-cash/transaction/' + txHash + '" target="_blank">View in Explorer</a></p> </div> </li> <li> <hr class="dropdown-divider"> </li>';
           document.getElementById('notifications').innerHTML += notifications;
@@ -1144,13 +1161,11 @@ function colorLinks(hex)
             window.alert('Failed to SIGN message: ' + err);
             // Show error to user
       }
-  }else{
-    // show message empty error to user
-    document.getElementById('signverifymsgerror').style.display = 'inline';
-  }
-    // NodeBox example:
-    // Enter "sign, PRIVATEKEYWIF, MESSAGE" to sign a message with a private key.
-    // sign, KxtpRDUJDiutLaTV8Vuavhb6h7zq9YV9ZKA3dU79PCgYmNVmkkvS, Bitcoin Cash is Bitcoin
+    }else{
+      // show message empty error to user
+      document.getElementById('signverifymsgerror').style.display = 'inline';
+    }
+
   }
   
   async function verifyMessage(){
@@ -1167,26 +1182,20 @@ function colorLinks(hex)
     // Verify the Message (using the Message & Signature) 
   if(msg.length > 0){
     document.getElementById('signverifymsgerror').style.display = 'none';
-    
-    try {
-      verifyResult = await wallet.verify(msg, sig);
-      window.alert('Valid:\n ' + verifyResult.valid + '\n \nMessage:\n  ' + msg + '\n \nBitcoin Cash Address:\n' + wallet.cashaddr + '\n \nSignature:\n' + sig);
-          // Show the verification of the signature and other details for the user.
+      try {
+        verifyResult = await wallet.verify(msg, sig);
+        window.alert('Valid:\n ' + verifyResult.valid + '\n \nMessage:\n  ' + msg + '\n \nBitcoin Cash Address:\n' + wallet.cashaddr + '\n \nSignature:\n' + sig);
+            // Show the verification of the signature and other details for the user.
 
-    } catch (err) {
-          console.error('Failed to VERIFY message: ', err);
-          window.alert('Failed to VERIFY message: ' + err);
-          // Show error to user
+      } catch (err) {
+            console.error('Failed to VERIFY message: ', err);
+            window.alert('Failed to VERIFY message: ' + err);
+            // Show error to user
+      }
+    }else{
+      // show message empty error to user
+      document.getElementById('signverifymsgerror').style.display = 'inline';
     }
-    
-  }else{
-    // show message empty error to user
-    document.getElementById('signverifymsgerror').style.display = 'inline';
-    
-  }
-    // NodeBox Example:
-    // Enter "verify, BCH_ADDRESS, SIGNATURE, MESSAGE" to verify a signed message.
-    // verify, bitcoincash:qp2zvw3zpk5xx43w4tve7mtekd9kaxwj4uenq9eupv, II+rsv72D/KnZ6noO25WWtXnu3C2seCuJEJ6HwB3yalFTbeBjF1FSw6XuaOnxpwsrEXHimIdJB9k3aKsJaQB0L0=, Bitcoin Cash is Bitcoin
   }
   
   
@@ -1424,7 +1433,7 @@ function colorLinks(hex)
         </a>
       </li>
       
-            <li class="nav-item">
+     <li class="nav-item">
         <a class="nav-link collapsed" href="#mnemonic1">
           <i class="bx bxs-lock"></i>
           <span >Mnemonic / Seed</span>
@@ -1438,36 +1447,45 @@ function colorLinks(hex)
         </a>
       </li>
       
-            <li class="nav-item">
+      <li class="nav-item">
         <a class="nav-link collapsed" href="#coins" >
           <i class="bi bi-cash-coin"></i>
           <span >Coins / UTXOs</span>
         </a>
       </li>
       
-            <li class="nav-item">
+      <li class="nav-item">
         <a class="nav-link collapsed" href="#sendBCH" >
           <i class="bi bi-send-check-fill"></i>
           <span>Send</span>
         </a>
       </li>
       
-                  <li class="nav-item">
+      <li class="nav-item">
         <a class="nav-link collapsed" href="#signverify" >
           <i class="bi bi-check-lg"></i>
           <span>Sign / Verify</span>
         </a>
       </li>
-
-<hr width="65%" />
-
+      
+      <li class="nav-item">
+        <a class="nav-link collapsed" onclick="window.print()" >
+          <i class="bi bi-printer-fill"></i>
+          <span>Print this Page</span>
+        </a>
+      </li>
+      
       <li class="nav-item">
         <a class="nav-link collapsed" onClick="faq()" >
           <i class="bi bi-question-circle"></i>
           <span >F.A.Q</span>
         </a>
       </li>
-
+<!--
+<hr width="65%" />
+-->
+<span style="font-size:8pt;font-style:italic;" id="linksMore" onclick="function dothis(){ document.getElementById('externalLinks').style.display = 'block'; }">External Links  + </span>
+<div id="externalLinks" >
       <li class="nav-item">
         <a class="nav-link collapsed" href="https://electroncash.org" target="_blank">
           <i class="bi bi-incognito"></i>
@@ -1481,7 +1499,14 @@ function colorLinks(hex)
           <span>CashFusion Privacy</span>
         </a>
       </li>
-
+      
+            <li class="nav-item">
+        <a class="nav-link collapsed" href="https://paper.keepbitcoinfree.org" target="_blank">
+          <i class="bi bi-wallet2"></i>
+          <span>Paper BCH Wallet</span>
+        </a>
+      </li>
+</div>
       <!-- End F.A.Q Page Nav -->
 
     </ul>
@@ -1497,7 +1522,7 @@ function colorLinks(hex)
                     <li class="breadcrumb-item active"><a href="https://bitcoincash.org" target="_blank">Bitcoin Cash</a> </li>
           <li class="breadcrumb-item">Network: <span id='network'></span></li> 
                    <!-- <li class="breadcrumb-item"><a href="index.html">Home</a></li> -->
-          <li class="breadcrumb-item">Derivation: <span id="derivation1"></span></li>
+          <li class="breadcrumb-item"><a href="https://learnmeabitcoin.com/technical/derivation-paths" target="_blank">Derivation</a>: <span id="derivation1"></span></li>
         </ol>
       </nav>
       <span style="font-size: 14px;
