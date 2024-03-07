@@ -9,15 +9,14 @@
   <meta content="Bitcoin Cash Web Wallet built with clientside JavaScript." name="description">
   <meta content="Bitcoin Cash, JavaScript, Web Wallet" name="keywords">
   
-  <!-- Favicons 
-  <link href="assets/img/favicon.png" rel="icon"> -->
+  <!-- Favicons --> 
   <link href="assets/img/bitcoin-cash-circle-icon-192.png" rel="icon">
-  
   <link href="assets/img/bitcoin-cash-circle-icon-192.png" rel="apple-touch-icon">
 
   <!-- Google Fonts -->
   <link href="https://fonts.gstatic.com" rel="preconnect">
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+  <!--   <link href="assets/css/opensans.css" rel="stylesheet"> -->
 
   <!-- CSS Files -->
   <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
@@ -30,12 +29,13 @@
 
   <!-- Main CSS File -->
   <link href="assets/css/style.css" rel="stylesheet">
+
 <!--
   * ========================================
-  * Created by KeepBitcoinFree.org for use as an internal Bitcoin Cash Web Wallet - 
-  * Currently using the mainnet-js library & the library is hosted locally to the app - https://mainnet.cash
-  * The applcation is serverless. All Private Keys are stored locally in the browser's IndexedDB Storage. The website uses only clientside Javascript for everything.
-  * There is no server and no database. Only the html, css & javascript files are hosted on a server. These files can be downloaded and hosted locally, only an internet connection is required to create a wallet and send/recieve BCH.
+  * BCH Admin was created by KeepBitcoinFree.org for use locally as a Bitcoin Cash Web Wallet.
+  * Uses the mainnet-js library & the library is hosted locally to the app - https://mainnet.cash
+  * The applcation is serverless. All Private Keys are stored locally in the browser's IndexedDB Storage. The website uses clientside Javascript for everything.
+  * There is no server and no database. Only the html, css & javascript files are hosted on an web server. These files can be downloaded and hosted locally; only an internet connection is required to create a wallet and send/recieve BCH.
   *
   * For now 1 cookie/browser/website (combo) = one user/wallet. Keys are stored within the indexedDB in the local user's browser and local to that device, browser & website.
   *
@@ -71,8 +71,11 @@
       // Create Formatter to format numbers.
       const US = new Intl.NumberFormat();
       let thebchPrice = 0;
-     // let depositAddr;
-      
+
+      // const userPrefersDark = false;
+      const walletExists = localStorage.getItem("isnew") === "false";
+
+    // Run when the DOM Content has been loaded  
     document.addEventListener("DOMContentLoaded", async (event) => {
       globalThis.exports = globalThis.exports || {};
       Object.assign(globalThis, await __mainnetPromise);
@@ -85,13 +88,31 @@
       console.log('Date is... ' + date);
       console.log('userid = '+userid);
       
+      // Check persistent theme dark/light mode from IndexedDB.
+      // const userPrefersDark = false;
+      const userPrefersDark = localStorage.getItem("theme") === "dark";
+      if(userPrefersDark){
+       // toggleDarkMode()
+        document.getElementById('darkmode').click();
+      }
+
+
+      // TODO: Check if wallet already exists, if not prompt user to create a new one OR to *RESTORE FROM SEED* using MODAL.
+
+
+
+
       // Creates new/loads existing TESTNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
       // const tWallet = await TestNetWallet.named(userid);
       // tWallet.balance = await tWallet.getBalance();
       
+      
+
       // Creates new/loads existing MAINNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
       const wallet = await Wallet.named(userid);
-      
+      console.log('Mainnet BCH wallet has been created... ', wallet);
+      localStorage.setItem("isnew", "false");
+
       // TODO: Make Heirarchical Derivation (HD node) - using new addresses for each new utxo. 
       // Using default Electron-Cash "BIP44" Derivation Path to make importing to ElectronCash easier, not Bitcoin.com's multi-coin wallet.
       // const wallet = await Wallet.fromSeed(wallet1.mnemonic, "m/44'/1'/145'/0/0");
@@ -109,7 +130,7 @@
       // wallet.mnemonic
       // wallet.derivationPath
       
-      // Get current wallet Derivation path
+      // Get current wallet Derivation path and display for user.
       let derPath = wallet.derivationPath;
       console.log('DERIVATION PATH FOR WALLET = ' + derPath);
       document.getElementById("derivation").innerHTML = derPath;
@@ -130,7 +151,7 @@
         // Fill in Datatable with UTXO hydration.
         var tbody = document.getElementById('tbody');
 
-
+        // TODO: Make it load the Datatabes ONLY AFTER the for loop has finished loading all utxos (currently using jQuery to do this after 3 seconds but it needs to only do it after it has finished.
 
     //    var tr1 = "<thead><tr><th scope='col'>TxID</th><th scope='col'>Satoshis</th><th scope='col'>Height</th><th scope='col'>Status</th></tr></thead>";
      //   tbody.innerHTML = tr1;
@@ -182,10 +203,8 @@
 //const response = await wallet.waitForTransaction(options);
 
 
-
-
-        
-      //  Get usd price of 1 BCH to display
+      //  Get USD price of 1 BCH to display using the built-in price-getter from mainnet.cash library
+      // TODO: Add a dropdown to select the currency and then save that preference in localStorage.getItem('currency'); Default: USD
       let bchPrice = await convert(1, "bch", "usd");
       if(bchPrice){ 
         document.getElementById("bchprice").innerHTML = bchPrice;
@@ -195,8 +214,6 @@
       // MAINNET WALLET LOGIC after wallet has been loaded/created.
       if(wallet){
         let notifLength = 0;
-
-        console.log('Mainnet BCH wallet created... ', wallet);
 
         // Display all balance info - BCH, USD & SATS
         document.getElementById('bal').innerHTML = wallet.balance.bch + ' BCH';
@@ -398,8 +415,8 @@
         }
       }, 5000);
     
-    // Function to allow user to Delete their bitcoincash wallet (and start anew). For some reason, it says it fails to delete, but it does.
-    // TODO: force a reload of the page after delete so user doesn't accidentally send to old wallet.
+    // Function to allow user to Delete their bitcoincash wallet (and start anew). For some reason, it says it fails to delete, but it actually does delete it.
+    // TODO: Should force a reload of the page after delete so user doesn't accidentally send coins to old wallet.
     function deleteWallet() {
 
       let databaseName = "bitcoincash";
@@ -415,7 +432,7 @@
           };
           req.onerror = function () {
               console.log("Couldn't delete database for BCH wallet.");
-              alert("Couldn't delete database for BCH wallet.");
+              alert("Error... but it still probably deleted the wallet. You should refresh the page!");
           };
           req.onblocked = function () {
               console.log("Couldn't delete database for BCH wallet due to the operation being blocked. It probably deleted it anyways though.");
@@ -424,7 +441,7 @@
           
         } else {
           // Do nothing!
-          console.log('Wallet was not deleted.');
+          console.log('Wallet was not deleted; user cancelled');
         }
         // TODO: send back error/success msg to HTML - or just FORCE RELOAD
 
@@ -439,6 +456,8 @@
     // #
     // # https://mainnet.cash/tutorial/#sending-money
     // #
+    
+    // TODO: Add in a NULL check for send-Total
     async function sendBCH() {
 
       console.log('SendBCH function kicked off...');
@@ -453,6 +472,12 @@
           if(!isHidden(invalidInputs[i])) {
             thereareerrors = true;
           }
+        }
+        
+        // Null check
+        if (document.getElementById("send-total").value < 0.00000001){
+          console.log('User is trying to send value less than 0.00000001');
+          thereareerrors = true;
         }
 
         console.log('Are there errors? ' + thereareerrors);
@@ -535,11 +560,8 @@
 
 
             // subtract a standard fee amnt from total so that the change can be used
-            // TODO: For some reason, this works to pay the send fee from the selected input (for standard sized txs) BUT for some 
-            // reason, it is including other inputs in the same address (sending them back to same address). I don't know if 
-            // this is a feature, a bug, or an issue with my "options" params.
-            let fees = 0.00000361;
-            sendTotal -= fees;
+     //       let fees = 0.00000361;
+     //       sendTotal -= fees;
 
             var sendRequestOptions;
             
@@ -691,19 +713,21 @@
   }
   
     // Custom function to enable/disable dark mode
+    // TODO: REDO ALL OF THIS to do it correctly; this is some bad h4cks
     function toggleDarkMode() {
       console.log('Toggling DARK mode');
       let currentBackground = document.getElementById('main').style.background;
       // already D4RK?
       if(currentBackground === "black"){
-          // make it LIGHT
-          document.getElementById('main').style.background = "none";
+        // make it LIGHT
+        document.getElementById('main').style.background = "none";
         document.getElementById('header').style.background = "white";
         document.getElementById('footer').style.background = "white";
         document.getElementById('sidebar').style.background = "white";
         document.getElementById('utxoTable').tHead.style.background = "none";
 
-
+        //user prefers light mode;
+        localStorage.setItem("theme", "light");
           //document.html.style.color = "white !important;"
           
           var sideClasses = document.getElementsByClassName("sidebar");
@@ -777,6 +801,8 @@
         // make utxo table head dark
         document.getElementById("utxoTable").tHead.style.background = "black";
 
+        // user prefers D4RK mode
+        localStorage.setItem("theme", "dark");
 
         //document.getElementById('main').style.background = "black";
         var sideClasses = document.getElementsByClassName("sidebar");
@@ -837,8 +863,12 @@
            all[i].style.color = "white";
           }
           
+          // Make sure our inputs are all black
           document.getElementById("sendtoaddress").style.color = "black";
           document.getElementById("send-total").style.color = "black";
+          document.getElementById("signverifymessage").style.color = "black";
+          document.getElementById("signaturetoverify").style.color = "black";
+          
           
           var allElements = document.getElementsByTagName('label');
           for (var i = 0, n = allElements.length; i < n; i++)
@@ -1302,7 +1332,7 @@ function colorLinks(hex)
 
         <li class="nav-item dropdown" style="padding-right:20px">
           <label class="switch"> <span style="font-size:10pt"></span>
-            <input id="darkmode" type="checkbox" onClick="toggleDarkMode()" >
+            <input id="darkmode" type="checkbox" onClick="toggleDarkMode()" title="Toggle Dark Mode" >
             <span class="slider"></span>
            </label>
            <!-- <i class="bi bi-search"></i> -->
@@ -1455,7 +1485,7 @@ function colorLinks(hex)
       </li>
       
       <li class="nav-item">
-        <a class="nav-link collapsed" href="#sendBCH" >
+        <a class="nav-link collapsed" href="#sendBCHcard" >
           <i class="bi bi-send-check-fill"></i>
           <span>Send</span>
         </a>
@@ -1752,7 +1782,7 @@ function colorLinks(hex)
                               </h2>
                               <div id="faqsOne-1" class="accordion-collapse collapse" data-bs-parent="#faq-group-1" style="">
                                 <div class="accordion-body">
-                                  BCH Admin is a non-custodial Bitcoin Cash Web Wallet. All keys are safely stored within your browser and are local to your browser on your device, as well as the domain. This means that if you use a different device/browser, a different wallet will be created. Be sure to back up your Mnemonic Seed Phrase and Derivation Path so that you can restore your BCH on any other Bitcoin Cash wallet. 
+                                  BCH Admin is a non-custodial & serverless Bitcoin Cash Web Wallet. Private keys are safely stored within your browser. To learn more about how the Bitcoin Cash wallet is created and persisted, visit <a href="https://mainnet.cash" target="_blank">Mainnet.cash</a>. The BCH wallet created and persisted is local to the [ browser / device / domain ] that is used. This means if you use a different device, browser or domain, then a different wallet will be created. Be sure to back up your Mnemonic Seed Phrase and Derivation Path so that you can restore your BCH on any other Bitcoin Cash wallet. 
                                 </div>
                               </div>
                             </div>
@@ -1765,7 +1795,7 @@ function colorLinks(hex)
                               </h2>
                               <div id="faqsOne-2" class="accordion-collapse collapse" data-bs-parent="#faq-group-1">
                                 <div class="accordion-body">
-                                  <a href="https://bitcoincash.org" target="_blank">Bitcoin Cash</a> is a <a href="https://keepbitcoinfree.org/wp-content/uploads/bitcoin.pdf" target="_blank">purely peer-to-peer version of electronic cash</a>, created in 2009 by Satoshi Nakamoto. Where BTC has repeatedly failed as a currency (high fees, slow confirmation times), and actually attempted to move users off-chain, Bitcoin Cash has succesfully scaled on-chain with larger blocks (32MB+), consistently low fees, and instant 0-conf transactions. Low fees and instant 0-conf transactions used to be features of BTC, but now only exist within BCH. <a href="https://whybitcoincash.com" target="_blank">Why Bitcoin Cash?</a>
+                                  <a href="https://bitcoincash.org" target="_blank">Bitcoin Cash</a> is a <a href="https://keepbitcoinfree.org/bitcoin.pdf" target="_blank">purely peer-to-peer version of electronic cash</a>, created in 2009 by <a href="https://satoshi.nakamotoinstitute.org" target="_blank">Satoshi Nakamoto</a>. Where the BTC fork has repeatedly failed to scale and act as a functional currency (high fees, slow confirmation times), Bitcoin Cash (BCH) has successfully scaled on-chain with larger blocks (32MB+), consistently low fees, and instant 0-conf transactions. Low fees and instant 0-conf transactions used to be features of BTC, but now only exist within BCH. <a href="https://whybitcoincash.com" target="_blank">Why Bitcoin Cash?</a>
                                 </div>
                               </div>
                             </div>
@@ -1778,9 +1808,9 @@ function colorLinks(hex)
                               </h2>
                               <div id="faqsOne-3" class="accordion-collapse collapse" data-bs-parent="#faq-group-1">
                                 <div class="accordion-body">
-                                  <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">The BCH Admin code is open source so you can verify what the code is doing</a>. The webpage is serverless and only uses HTML, CSS & <i>clearly written</i> client-side JavaScript: <a href="https://mainnet.cash" target="_blank">mainnet-js library</a> to interact with the Bitcoin Cash blockchain and store the private keys within the Browser's IndexDB Storage. There is no malicious code; you are welcome to review the source code to confirm that statement. BCH Admin uses an SSL certificate to encrypt communications on the website. You can also just as easily download the source code and host the wallet locally. The code still reaches out to third party nodes to verify tx data and broadcast transactions. The private keys used to sign transactions do not ever leave your browser's local storage and are not saved anywhere else. 
+                                  <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">The BCH Admin code is open source so you can verify what the code is doing</a>. The website itself is serverless (zero backend code) and only uses HTML, CSS & <i>clearly written, albeit a bit sloppy,</i> client-side JavaScript: utilizing the<a href="https://mainnet.cash" target="_blank">mainnet-js library/scripts</a> to interact with the Bitcoin Cash blockchain and store the private keys within the Browser's IndexDB Storage. There is no malicious code that I am aware of within the index.html, or included JavaScript assets. Everyone is welcome to review the source code to confirm that. <br /><br />BCH Admin uses an SSL certificate to encrypt communications on the website and mainnetjs essentially opens a websocket to a Bitcoin Cash node within your browser (whereas Electron Cash does this within the electron desktop application). You can also easily download the source code and host the wallet locally. The code still reaches out to third party nodes to verify tx data and broadcast transactions. The private keys used to sign transactions do not ever leave your browser's local storage and are not saved anywhere else. 
                                   <br /><br />
-                                  * Please note that this software is offered AS IS with absolutely NO GAURANTEE that your funds will be safe. WE (KeepBitcoinFree.org) DOES NOT HOLD YOUR PRIVATE KEYS AND WE CANNOT, AND DO NOT WISH TO, STEAL YOUR Bitcoin Cash, BCH. This application is serverless, all keys are stored in your browser. Back up your seed phrase and derivation to restore your wallet on any other Bitcoin Cash wallet.
+                                  * Please note that this software is offered AS IS with NO GAURANTEE that your funds will be safe. WE (https://KeepBitcoinFree.org) DOES NOT EVER HOLD YOUR PRIVATE KEYS; WE CANNOT, AND DO NOT WISH TO, STEAL YOUR Bitcoin Cash, BCH. This application is serverless, all keys are stored in your browser. Back up your seed phrase and derivation to restore your coins on any other Bitcoin Cash wallet.
                                 </div>
                               </div>
                             </div>

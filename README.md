@@ -15,6 +15,7 @@ BCH Admin is a simple, serverless Bitcoin Cash web wallet. It is built using HTM
 - Wallet balance displayed in BCH, Satoshis & USD
 - Coin Control/UTXO selection (or custom amount) for sending BCH 
 - Ability to sign/verify messages using the private key of the wallet address
+- Light / Dark mode toggle switch
  
 ##### *Possibly* Planned Features: 
 - Transaction history
@@ -25,7 +26,7 @@ BCH Admin is a simple, serverless Bitcoin Cash web wallet. It is built using HTM
 
 Please note: This wallet was developed to be used internally. It is a beta version and is not meant to be used to hold large amounts - as it is still a web wallet. There is no server, we DO NOT EVER save or store your private keys. All private keys for the wallet are created and saved within the browser and are local/accessible to the computer/device, the browser & the website you are using. For example, you can visit https://wallet.keepbitcoinfree.org and a new wallet will be created. Every time you visit that site on the same device, with the same browser, then your same wallet will be displayed. 
 
-If you open another browser on the same device and visit the same site, a new wallet will be created. If you download the source code files and access the website locally, then a new wallet will be created. In all of these instances, the seed phrase/mnemonic is stored within the browser's IndexedDB storage and accessible to that device, browser, & website. In no cases are the private keys ever sent anywhere malicous. The code is open source and accessible to everyone to review - https://github.com/KeepBitcoinFree-org/bch-admin. 
+If you open another browser on the same device and visit the same site, a new wallet will be created. If you download the source code files and access the website locally, then a new wallet will be created. In all of these instances, the seed phrase/mnemonic is stored within the browser's IndexedDB storage and accessible to that device, browser, & website. In no cases are the private keys or seed phrase ever sent/saved anywhere malicous. The code is fully open source (as is mainnet.cash) and accessible to everyone to review, fork &/or contribute to - https://github.com/KeepBitcoinFree-org/bch-admin. 
 
 
 Bitcoin was meant to be a peer-to-peer electronic cash system for the world. Bitcoin was meant to scale.
