@@ -32,19 +32,19 @@
 
 <!--
   * ========================================
-  * BCH Admin was created by KeepBitcoinFree.org for use locally as a Bitcoin Cash Web Wallet.
-  * Uses the mainnet-js library & the library is hosted locally to the app - https://mainnet.cash
-  * The applcation is serverless. All Private Keys are stored locally in the browser's IndexedDB Storage. The website uses clientside Javascript for everything.
-  * There is no server and no database. Only the html, css & javascript files are hosted on an web server. These files can be downloaded and hosted locally; only an internet connection is required to create a wallet and send/recieve BCH.
+  * BCH Admin was created by KeepBitcoinFree.org as a personal project in 2022 as a means to explore the mainnet.cash library.
+  * It uses the mainnet-js library & the libraries are hosted locally to the app. Learn more about https://mainnet.cash
+  * The wallet is serverless and uses vanilla client-side JavaScript. All Private Keys are created and stored locally in the browser's IndexedDB Storage.
+  * The source code consists of the HTML page and other assets: css & javascript files, hosted locally. These files can be downloaded and run locally; only an internet connection and a browser capable of running JavaScript is required to create a new wallet, send/recieve BCH, or sign/verify a message.
   *
   * For now 1 cookie/browser/website (combo) = one user/wallet. Keys are stored within the indexedDB in the local user's browser and local to that device, browser & website.
   *
   * Using a private session will create a new wallet each time the website is opened.
   * TODO: *Maybe* add ability to create user & log-in so the user could create multiple wallets for each user.
-  * TODO: Add functionality to generate & print a PAPER WALLET. Currently link to paper.keepbitcoinfree.org
-  * TODO: Add functionality to restore a wallet from seed
-  * TODO: Add functionality for PointOfSale system. Use the xpub key to display a screen that has a new address for each order. Watch that address while open, etc.
-  * From the xPub, we generate addresses starting from the first address in the sequence, and a new address from the next one in the sequence for every new order, using the BIP44 derivation path.
+  * DONE: Added functionality to print the webpage as a PAPER WALLET. Also link to paper.keepbitcoinfree.org for an official BCH paper wallet.
+  * TODO: Add functionality to restore a wallet from seed *En progress.
+  * TODO: Add functionality for PointOfSale system. Use the xpub key to display a screen that has a new address for each order. Watch that address while open, and generate success modal/page etc.
+  * - From the xPub, we generate addresses starting from the first address in the sequence, and a new address from the next one in the sequence for every new order, using the BIP44 derivation path.
   * =======================================
 -->
 
@@ -60,7 +60,7 @@
   <script src="assets/js/jquery-3.6.4.min.js"></script>
   <script src="assets/js/jquery.dataTables.min.js"></script>
 
-  <!-- Custom Wallet Functionality JavaScript - written by Zatoshi - https://github.com/KeepBitcoinFree-org -->
+  <!-- Custom Wallet Functionality JavaScript - written by Zatoshi - https://github.com/KeepBitcoinFree-org - utilizing the open source Mainnet.cash JS Library -->
   <script type="text/javascript">
       
       // Global Vars \\
@@ -71,9 +71,6 @@
       // Create Formatter to format numbers.
       const US = new Intl.NumberFormat();
       let thebchPrice = 0;
-
-      // const userPrefersDark = false;
-      const walletExists = localStorage.getItem("isnew") === "false";
 
     // Run when the DOM Content has been loaded  
     document.addEventListener("DOMContentLoaded", async (event) => {
@@ -88,17 +85,23 @@
       console.log('Date is... ' + date);
       console.log('userid = '+userid);
       
+      // const userPrefersDark = false;
+      const walletExists = localStorage.getItem("isnew") === "false";
+
+      if(walletExists){
+
+
       // Check persistent theme dark/light mode from IndexedDB.
       // const userPrefersDark = false;
       const userPrefersDark = localStorage.getItem("theme") === "dark";
       if(userPrefersDark){
-       // toggleDarkMode()
+       // click the button to trigger d4rk mode
         document.getElementById('darkmode').click();
       }
 
 
       // TODO: Check if wallet already exists, if not prompt user to create a new one OR to *RESTORE FROM SEED* using MODAL.
-
+      
 
 
 
@@ -106,7 +109,7 @@
       // const tWallet = await TestNetWallet.named(userid);
       // tWallet.balance = await tWallet.getBalance();
       
-      
+
 
       // Creates new/loads existing MAINNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
       const wallet = await Wallet.named(userid);
@@ -211,7 +214,7 @@
         thebchPrice = bchPrice;
       }
 
-      // MAINNET WALLET LOGIC after wallet has been loaded/created.
+      // MAINNET WALLET LOGIC to run only after wallet has been loaded/created.
       if(wallet){
         let notifLength = 0;
 
@@ -228,6 +231,7 @@
         // Add Deposit Addr QR code to HTML.
         document.querySelector('#depositqr').src = wallet.getDepositQr().src;
         
+        // TODO: Use pubx key to generate addresses for Point of Sale page. This page could auto-generate new addresses each time funds are received. It could also send any funds recieved back to the main wallet "receive" address so they aren't lost.
         // Use derivation path to get PubKeys to create additional recieve addresses (if needed?)
         //await wallet.getXPubKeys();
       
@@ -290,7 +294,7 @@
           // await Mainnet.getAddrsByXpubKey("tpubDDfazrbXYF84Xxq7XqnakjAwVyCFVUGEWrsuQY3VqzpV8QgH2X2cczoZbEAyMdRmcra4nLhf67vEZ1jSnQ2KKcq5USoTGtFGaVTsXx7XsG7","0/0",5)
 
 
-          // ADD NOTIFICATION
+          // Create NOTIFICATION for new address displayed in top right of screen
           createNotif(txHash);
 
 
@@ -318,7 +322,11 @@
           // use PubKeys to get more Addrs
           // await Mainnet.getAddrsByXpubKey("tpubDDfazrbXYF84Xxq7XqnakjAwVyCFVUGEWrsuQY3VqzpV8QgH2X2cczoZbEAyMdRmcra4nLhf67vEZ1jSnQ2KKcq5USoTGtFGaVTsXx7XsG7","0/0",5)
 
-      } // END if(wallet){}
+        } // END if(wallet){}
+      }else{
+        document.getElementById("newWalletView").style.display = "inline";
+      }
+
     }); // END CONTENT LOADED LISTENER
 
     // GENERAL CUSTOM FUNCTIONS
@@ -1353,58 +1361,8 @@ function colorLinks(hex)
             <li>
               <hr class="dropdown-divider">
             </li>
-
-          
-<!--
-   <li class="notification-item"> <i class="bi bi-exclamation-circle text-warning"></i><div> <h4>Lorem Ipsum</h4> <p>Quae dolorem earum veritatis oditseno</p> <p>30 min. ago</p> </div> </li> <li> <hr class="dropdown-divider"> </li>
-
-            <li class="notification-item">
-              <i class="bi bi-x-circle text-danger"></i>
-              <div>
-                <h4>Atque rerum nesciunt</h4>
-                <p>Quae dolorem earum veritatis oditseno</p>
-                <p>1 hr. ago</p>
-              </div>
-            </li>
-
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-
-            <li class="notification-item">
-              <i class="bi bi-check-circle text-success"></i>
-              <div>
-                <h4>Sit rerum fuga</h4>
-                <p>Quae dolorem earum veritatis oditseno</p>
-                <p>2 hrs. ago</p>
-              </div>
-            </li>
-
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-
-            <li class="notification-item">
-              <i class="bi bi-info-circle text-primary"></i>
-              <div>
-                <h4>Dicta reprehenderit</h4>
-                <p>Quae dolorem earum veritatis oditseno</p>
-                <p>4 hrs. ago</p>
-              </div>
-            </li>
-
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-            <li class="dropdown-footer">
-              <a href="#">Show all notifications</a>
-            </li>
---> 
           </ul><!-- End Notification Dropdown Items -->
-
         </li><!-- End Notification Nav -->
-
-        
 
         <li class="nav-item dropdown pe-3">
 
@@ -1545,6 +1503,27 @@ function colorLinks(hex)
 
   <main id="main" class="main">
 
+    <div class="container">
+      <div id="newWalletView" class="hide">
+        <fieldset style="margin-top: 15px;">
+            <h4><img class="icon plusIcon" src="/images/plus-square.svg"> Create new wallet</h4>
+            <input class="button primary" type="button" value="Create" onclick="createNewWallet()">
+            <br><br>
+            <hr>
+            <br>
+            <h4><img class="icon importIcon" src="/images/log-in.svg"> Import existing wallet</h4> 
+            <div>Enter mnemonic seed phrase</div>
+            <textarea style="resize: none;" id="enterSeedphrase" rows="3" cols="50" placeholder="word1 word2 ..."></textarea>
+            <span>Derivation path: </span>
+            <select name="derivationPath" id="derivationPath" onchange="selectTokenType(event)">
+              <option value="standard">m/44’/145’/0’ (standard)</option>
+              <option value="bitcoinfotcom">m/44’/0’/0’ (bitcoin.com wallet)</option>
+            </select> <br>
+            <input class="button primary" type="button" style="margin-top:15px" value="Import" onclick="importWallet()">
+            <br><br>
+        </fieldset>
+      </div>
+
     <div class="pagetitle">
       <h1>Wallet Dashboard</h1>
       <nav>
@@ -1587,7 +1566,7 @@ function colorLinks(hex)
 
                 <noscript>
                   <div style="color:red">
-                    *This site requires JavaScript. Please enable JavaScript in your browser to create a new Bitcoin Cash wallet.
+                    * This website requires JavaScript to function properly. Please enable JavaScript in your browser to create a new Bitcoin Cash wallet. If you don't want to use JavaScript, check out the <a href="https://electroncash.org" target="_blank">Electron Cash</a> Desktop/Mobile wallet.
                   <br /><br />
                   </div>
                 </noscript>
@@ -1744,8 +1723,56 @@ function colorLinks(hex)
                             <button type="button" class="btn-close" onClick="reloadBal()" data-bs-dismiss="modal" aria-label="Close"></button>
                           </div>
                           <div id="txdetectbody" class="modal-body">
-                            A new Transaction ID / Hash has been detected for your Deposit Address - <span id="cashaddr2"></span>.  The TX Hash is <span id="txhash">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>.
+                            A new Transaction ID / Hash has been detected for your Deposit Address - <span id="cashaddr2"></span>.  The TX Hash is <span id="txhash">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>.<br /><br />
+
+                            <span id="txouts"></span>
+                          
+  <!-- TODO: for each vout () 
+                          if(scriptPubKey.addresses === wallet.address){
+                            You have received vout.value BCH
+                          }
+                          
+{
+    "hash": "47d14af6ba7755237cef8a86632c6190e83e76f259c3e4c4017cf6b20b1a41b0",
+    "hex": "01000000016d34d72ee8ad69c277abece2d49311bdb003eecd5f11f6cfcb1926d912dac91405000000644198f68757e544c8e07d04e8282134c8b0cb63996962709c70b0fc5907f66e03c12a9d483bb4e9c406f30454621ea8cedc1ecffdf7542e5b6afafce4f065541033412102da2fddf666fe31cc520fe49fbc9934647f55d032b1653bf1bc211bab3b745096feffffff01b7ff0100000000001976a914c2e441c97def66d612565291c6b5e955f4388cfa88ac6cd70c00",
+    "locktime": 841580,
+    "size": 185,
+    "txid": "47d14af6ba7755237cef8a86632c6190e83e76f259c3e4c4017cf6b20b1a41b0",
+    "version": 1,
+    "vin": [
+        {
+            "scriptSig": {
+                "asm": "98f68757e544c8e07d04e8282134c8b0cb63996962709c70b0fc5907f66e03c12a9d483bb4e9c406f30454621ea8cedc1ecffdf7542e5b6afafce4f065541033[ALL|FORKID] 02da2fddf666fe31cc520fe49fbc9934647f55d032b1653bf1bc211bab3b745096",
+                "hex": "4198f68757e544c8e07d04e8282134c8b0cb63996962709c70b0fc5907f66e03c12a9d483bb4e9c406f30454621ea8cedc1ecffdf7542e5b6afafce4f065541033412102da2fddf666fe31cc520fe49fbc9934647f55d032b1653bf1bc211bab3b745096"
+            },
+            "sequence": 4294967294,
+            "txid": "14c9da12d92619cbcff6115fcdee03b0bd1193d4e2ecab77c269ade82ed7346d",
+            "vout": 5
+        }
+    ],
+    "vout": [
+        {
+            "n": 0,
+            "scriptPubKey": {
+                "addresses": [
+                    "bitcoincash:qrpwgswf0hhkd4sj2effr344a92lgwyvlglsu88vn7"
+                ],
+                "asm": "OP_DUP OP_HASH160 c2e441c97def66d612565291c6b5e955f4388cfa OP_EQUALVERIFY OP_CHECKSIG",
+                "hex": "76a914c2e441c97def66d612565291c6b5e955f4388cfa88ac",
+                "reqSigs": 1,
+                "type": "pubkeyhash"
+            },
+            "value": 0.00130999
+        }
+    ]
+}
+
+
+                          -->
+                          
                           </div>
+
+
                           <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onClick="reloadBal()">Close</button>
                             <!-- <button type="button" class="btn btn-primary">Okay</button> -->
@@ -1782,7 +1809,7 @@ function colorLinks(hex)
                               </h2>
                               <div id="faqsOne-1" class="accordion-collapse collapse" data-bs-parent="#faq-group-1" style="">
                                 <div class="accordion-body">
-                                  BCH Admin is a non-custodial & serverless Bitcoin Cash Web Wallet. Private keys are safely stored within your browser. To learn more about how the Bitcoin Cash wallet is created and persisted, visit <a href="https://mainnet.cash" target="_blank">Mainnet.cash</a>. The BCH wallet created and persisted is local to the [ browser / device / domain ] that is used. This means if you use a different device, browser or domain, then a different wallet will be created. Be sure to back up your Mnemonic Seed Phrase and Derivation Path so that you can restore your BCH on any other Bitcoin Cash wallet. 
+                                  BCH Admin is a non-custodial & serverless Bitcoin Cash Web Wallet. Private keys are safely stored within your browser. To learn more about how the Bitcoin Cash wallet is created and persisted, visit <a href="https://mainnet.cash/tutorial" target="_blank">Mainnet.cash</a>. The BCH wallet created and persisted is local to the [ browser / device / domain ] that is used. This means if you use a different device, browser or domain, then a different wallet will be created. Be sure to back up your Mnemonic Seed Phrase and Derivation Path so that you can restore your BCH on any other Bitcoin Cash wallet. 
                                 </div>
                               </div>
                             </div>
@@ -1808,7 +1835,7 @@ function colorLinks(hex)
                               </h2>
                               <div id="faqsOne-3" class="accordion-collapse collapse" data-bs-parent="#faq-group-1">
                                 <div class="accordion-body">
-                                  <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">The BCH Admin code is open source so you can verify what the code is doing</a>. The website itself is serverless (zero backend code) and only uses HTML, CSS & <i>clearly written, albeit a bit sloppy,</i> client-side JavaScript: utilizing the<a href="https://mainnet.cash" target="_blank">mainnet-js library/scripts</a> to interact with the Bitcoin Cash blockchain and store the private keys within the Browser's IndexDB Storage. There is no malicious code that I am aware of within the index.html, or included JavaScript assets. Everyone is welcome to review the source code to confirm that. <br /><br />BCH Admin uses an SSL certificate to encrypt communications on the website and mainnetjs essentially opens a websocket to a Bitcoin Cash node within your browser (whereas Electron Cash does this within the electron desktop application). You can also easily download the source code and host the wallet locally. The code still reaches out to third party nodes to verify tx data and broadcast transactions. The private keys used to sign transactions do not ever leave your browser's local storage and are not saved anywhere else. 
+                                  <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">The BCH Admin code is open source so you can verify what the code is doing</a>. The website itself is serverless (zero backend code) and only uses HTML, CSS & <i>clearly written, albeit a bit sloppy,</i> client-side JavaScript: utilizing the <a href="https://mainnet.cash" target="_blank">mainnet-js library/scripts</a> to interact with the Bitcoin Cash blockchain and store the private keys within the Browser's IndexDB Storage. There is no malicious code that I am aware of within the index.html, or included JavaScript assets. Everyone is welcome to review the source code to confirm that. <br /><br />BCH Admin uses an SSL certificate to encrypt communications on the website and mainnetjs essentially opens a websocket to a Bitcoin Cash node within your browser (whereas Electron Cash does this within the electron desktop application). You can also easily download the source code and host the wallet locally. The code still reaches out to third party nodes to verify tx data and broadcast transactions. The private keys used to sign transactions do not ever leave your browser's local storage and are not saved anywhere else. 
                                   <br /><br />
                                   * Please note that this software is offered AS IS with NO GAURANTEE that your funds will be safe. WE (https://KeepBitcoinFree.org) DOES NOT EVER HOLD YOUR PRIVATE KEYS; WE CANNOT, AND DO NOT WISH TO, STEAL YOUR Bitcoin Cash, BCH. This application is serverless, all keys are stored in your browser. Back up your seed phrase and derivation to restore your coins on any other Bitcoin Cash wallet.
                                 </div>

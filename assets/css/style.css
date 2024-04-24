@@ -1342,3 +1342,7 @@ input:checked + .slider:before {
 {
     cursor: pointer;
 }
+
+.hide {
+  display:none;
+}
