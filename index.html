@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html id="thehtml" lang="en">
 
 <head>
   <meta charset="utf-8">
@@ -13,7 +13,7 @@
   <link href="assets/img/bitcoin-cash-circle-icon-192.png" rel="icon">
   <link href="assets/img/bitcoin-cash-circle-icon-192.png" rel="apple-touch-icon">
 
-  <!-- Google Fonts -->
+  <!-- Google Fonts TODO: Replace with included static/downloaded fonts -->
   <link href="https://fonts.gstatic.com" rel="preconnect">
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
   <!--   <link href="assets/css/opensans.css" rel="stylesheet"> -->
@@ -32,8 +32,8 @@
 
 <!--
   * ========================================
-  * BCH Admin was created by KeepBitcoinFree.org as a personal project in 2022 as a means to explore the mainnet.cash library.
-  * It uses the mainnet-js library & the libraries are hosted locally to the app. Learn more about https://mainnet.cash
+  * BCH Admin was created by KeepBitcoinFree.org as a personal project in 2023.
+  * It uses the mainnet-js library & all libraries are hosted locally to the app. Learn more about https://mainnet.cash
   * The wallet is serverless and uses vanilla client-side JavaScript. All Private Keys are created and stored locally in the browser's IndexedDB Storage.
   * The source code consists of the HTML page and other assets: css & javascript files, hosted locally. These files can be downloaded and run locally; only an internet connection and a browser capable of running JavaScript is required to create a new wallet, send/recieve BCH, or sign/verify a message.
   *
@@ -72,7 +72,7 @@
       const US = new Intl.NumberFormat();
       let thebchPrice = 0;
 
-    // Run when the DOM Content has been loaded  
+    // RUN when the DOM Content has been loaded  
     document.addEventListener("DOMContentLoaded", async (event) => {
       globalThis.exports = globalThis.exports || {};
       Object.assign(globalThis, await __mainnetPromise);
@@ -83,69 +83,162 @@
       // Get and Print Date to console
       let date = Date.now();
       console.log('Date is... ' + date);
-      console.log('userid = '+userid);
-      
-      // const userPrefersDark = false;
-      const walletExists = localStorage.getItem("isnew") === "false";
+      console.log('userid = ' + userid);
 
+      // const userPrefersDark = false;
+      // const walletExists = localStorage.getItem("isnew") === "false";
+      const walletExists = await Wallet.namedExists(userid);
+      console.log('Wallet Exists? ' + walletExists)
+      
+      // Check if Wallet already exists?
       if(walletExists){
 
+        // if yes, get/set the walletid in localStorage.
+        let walletId = localStorage.getItem("walletId");
+          if(!walletId || walletId === ''){
+           //wallet exists BUT the walletId hasn't yet been set. That means it's an old wallet (using the default derivation)
+           //Create the named wallet (with userid) and create/set the walletId in localStorage **This will preserve old/previously created wallets.
+           const wallet = await Wallet.named(userid);
 
-      // Check persistent theme dark/light mode from IndexedDB.
-      // const userPrefersDark = false;
-      const userPrefersDark = localStorage.getItem("theme") === "dark";
-      if(userPrefersDark){
-       // click the button to trigger d4rk mode
-        document.getElementById('darkmode').click();
-      }
+           const derivation = wallet.derivationPath;
+           // ISSUE - default derivation is "m/44'/0'/0'/0/0"
+           // ** WHEN CREATING A NEW WALLET, I'LL NEED TO CREATE ONE, THEN USE THAT SEED TO CREATE A NEW ONE WITH THE CORRECT DERIVATION
+           // use the userid to create wallet1, then use that seed to create wallet with proper derivation.
+           const seed = wallet.mnemonic;
+           // const derivationPath = "m/44'/145'/0'/0/0";
+           // Create user wallet using supplied seed & derivation path.
+           walletId = 'seed:mainnet:' + seed + ':' + derivation;
+           localStorage.setItem("walletId", walletId);
+           console.log('walletId created from existing wallet - ' + walletId);
+            // Get Wallet Balance
+          wallet.balance = await wallet.getBalance();
+         // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
+         wallet.utxos = await wallet.getUtxos();
+         // Load the wallet
+          loadWallet(wallet);
 
+          }else{
+            console.log('walletId is not blank, value = ' + walletId);
+            const wallet = await Wallet.replaceNamed(userid, walletId);
+            // Get Wallet Balance
+            wallet.balance = await wallet.getBalance();
+            // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
+            wallet.utxos = await wallet.getUtxos();
+            // Load the wallet
+            loadWallet(wallet);
+          }
 
-      // TODO: Check if wallet already exists, if not prompt user to create a new one OR to *RESTORE FROM SEED* using MODAL.
-      
-
-
-
-      // Creates new/loads existing TESTNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
-      // const tWallet = await TestNetWallet.named(userid);
-      // tWallet.balance = await tWallet.getBalance();
-      
-
-
-      // Creates new/loads existing MAINNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
-      const wallet = await Wallet.named(userid);
-      console.log('Mainnet BCH wallet has been created... ', wallet);
-      localStorage.setItem("isnew", "false");
-
-      // TODO: Make Heirarchical Derivation (HD node) - using new addresses for each new utxo. 
-      // Using default Electron-Cash "BIP44" Derivation Path to make importing to ElectronCash easier, not Bitcoin.com's multi-coin wallet.
-      // const wallet = await Wallet.fromSeed(wallet1.mnemonic, "m/44'/1'/145'/0/0");
-      
-      if( wallet.derivationPath !== "m/44'/1'/145'/0/0"){
-        console.log('Wallet is NOT using BIP44 Derivation path');
+        
+        
       }else{
-        console.log('Wallet IS using BIP44 Derivation path');
+        // Wallet does not exist, show newwalletview div.
+        document.getElementById("newwalletview").classList.remove('hide');
+        // Hide the loader afterwards
+        document.getElementById("beaneater").classList.add('hide');
+        //document.getElementById("newWalletView").style.display = "inline";
       }
-      
-      // TODO: add functionality to allow user to restore from seed phrase, or WIF private key.
-      // const wallet = await Wallet.fromSeed("horse duck stapler...", "m/44'/1'/145'/0/0");
-      //const wallet = await Wallet.fromWIF('.....');
-      // wallet.privateKeyWif
-      // wallet.mnemonic
-      // wallet.derivationPath
-      
-      // Get current wallet Derivation path and display for user.
-      let derPath = wallet.derivationPath;
-      console.log('DERIVATION PATH FOR WALLET = ' + derPath);
-      document.getElementById("derivation").innerHTML = derPath;
-      document.getElementById("derivation1").innerHTML = derPath;
-      
-      
-      // Get Wallet Balance
-      wallet.balance = await wallet.getBalance();
-      
-      // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
-      wallet.utxos = await wallet.getUtxos();
-      // DEBUG console.log('all wallet UTXOs = ' + JSON.stringify(wallet.utxos, null, 4));
+
+    }); // END CONTENT LOADED LISTENER
+
+    // GENERAL CUSTOM FUNCTIONS
+    
+        // async function to create a new wallet
+      async function createNewWallet() {
+        
+        // Use promises? 
+        //     return new Promise(async (resolve, reject) => {
+        // set the derivation path, DEFAULT now being the standard HD wallet that most other wallets use - "m/44'/145'/0'/0/0;
+        const derivation = "m/44'/145'/0'/0/0";
+        // ISSUE - default derivation is "m/44'/0'/0'/0/0"
+        // ** WHEN CREATING A NEW WALLET, I'LL NEED TO CREATE ONE, THEN USE THAT SEED TO CREATE A NEW ONE WITH THE CORRECT DERIVATION
+        // use the userid to create wallet1, then use that seed to create wallet with proper derivation.
+        const wallet1 = await Wallet.named(userid);
+
+        const seed = wallet1.mnemonic;
+        // const derivationPath = "m/44'/145'/0'/0/0";
+        // Create user wallet using supplied seed & derivation path.
+        const walletId = 'seed:mainnet:' + seed + ':' + derivation;
+        // Save the walletId for later use - 
+        localStorage.setItem("walletId", walletId);
+        // Load/create the wallet.
+        const wallet = await Wallet.replaceNamed(userid, walletId);
+
+        // Get Wallet Balance
+        wallet.balance = await wallet.getBalance();
+        
+        // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
+        wallet.utxos = await wallet.getUtxos();
+
+        // Load the wallet
+        loadWallet(wallet);
+      }
+        
+
+
+     // function to import a wallet using a 12 word mnemonic seed phrase & derivation path.
+     async function importWallet() {
+        // grab selected derivation path 
+        const d = document.getElementById('derivationPath');
+        var derivation = d.options[d.selectedIndex].value;
+        // grab user entered seed phrase
+        const seed = document.getElementById('enterSeedphrase').value.trim();
+        // Create user wallet using supplied seed & derivation path.
+        const walletId = 'seed:mainnet:' + seed + ':' + derivation;
+        // Save the walletId for later use - 
+        localStorage.setItem("walletId", walletId);
+        // Create the wallet.
+        const wallet = await Wallet.replaceNamed(userid, walletId);
+
+        // Get Wallet Balance
+        wallet.balance = await wallet.getBalance();
+        // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
+        wallet.utxos = await wallet.getUtxos();
+        // Load the wallet
+        loadWallet(wallet);
+        }
+
+        // function to load the wallet
+    async function loadWallet(wallet) {
+        // Show the wallet details
+        document.getElementById("walletexists").classList.remove('hide');
+        // Hide the new wallet view
+        document.getElementById("newwalletview").classList.add('hide');
+        document.getElementById("beaneater").classList.add('hide');
+        // Check persistent theme dark/light mode from IndexedDB.
+        const userPrefersDark = localStorage.getItem("theme") === "dark";
+        
+        if(userPrefersDark){
+        // click the button to trigger d4rk mode if user Prefers D4rk
+          document.getElementById('darkmode').click();
+        }
+        
+        console.log('Mainnet BCH wallet has been created... ', wallet);
+        localStorage.setItem("isnew", "false");
+
+        // TODO: Make Heirarchical Derivation (HD node) - using new addresses for each new utxo. 
+        // Using default Electron-Cash "BIP39" Derivation Path to make importing to ElectronCash easier, not Bitcoin.com's multi-coin wallet.
+        // const wallet = await Wallet.fromSeed(wallet1.mnemonic, "m/44'/145'/0'/0/0");
+        
+        if( wallet.derivationPath !== "m/44'/145'/0'/0/0"){
+          console.log('Wallet is NOT using BIP39 Derivation path');
+        }else{
+          console.log('Wallet IS using BIP39 Derivation path');
+        }
+        
+        // TODO: add functionality to allow user to restore from seed phrase, or WIF private key.
+        // const wallet = await Wallet.fromSeed("horse duck stapler...", "m/44'/1'/145'/0/0");
+        //const wallet = await Wallet.fromWIF('.....');
+        // wallet.privateKeyWif
+        // wallet.mnemonic
+        // wallet.derivationPath
+        
+        // Get current wallet Derivation path and display for user.
+        let derPath = wallet.derivationPath;
+        console.log('DERIVATION PATH FOR WALLET = ' + derPath);
+        document.getElementById("derivation").innerHTML = derPath;
+        document.getElementById("derivation1").innerHTML = derPath;
+        
+        // DEBUG console.log('all wallet UTXOs = ' + JSON.stringify(wallet.utxos, null, 4));
         console.log('Hydrating UTXO Table...');
         
         //set utxo length
@@ -156,8 +249,8 @@
 
         // TODO: Make it load the Datatabes ONLY AFTER the for loop has finished loading all utxos (currently using jQuery to do this after 3 seconds but it needs to only do it after it has finished.
 
-    //    var tr1 = "<thead><tr><th scope='col'>TxID</th><th scope='col'>Satoshis</th><th scope='col'>Height</th><th scope='col'>Status</th></tr></thead>";
-     //   tbody.innerHTML = tr1;
+        //    var tr1 = "<thead><tr><th scope='col'>TxID</th><th scope='col'>Satoshis</th><th scope='col'>Height</th><th scope='col'>Status</th></tr></thead>";
+        //   tbody.innerHTML = tr1;
         
         for (var i = 0; i < wallet.utxos.length; i++) {
             
@@ -177,7 +270,7 @@
             var tr = "<tr><td><input class='coinsum' type='checkbox' value='" + satoshis +  "' name='" + txid + ":" + vout + "'></td>";
             // onClick='calculateSendTotal()'></td>";
             
-            //Add in link for txid to block explorer... or to nodebox?
+            //Add in link for txid to blockchair BCH block explorer.
             let txHashURL = '<a href="https://blockchair.com/bitcoin-cash/transaction/' + txid + '" target="_blank">' + txid + '</a>'
 
             
@@ -192,27 +285,27 @@
         } // END DataTable UTXO HYDRATION
 
 
-// TODO: Create separate page for Point of Sale (PoS) system/functionality. Then use the below to essentially pause everything to wait for
-// the TX. *SEND INFO FOR THE (newly generated) ADDRESS & AMOUNT to another page with just the address & amount, which also gives a SUCCESS MSG.
+        // TODO: Create separate page for Point of Sale (PoS) system/functionality. Then use the below to essentially pause everything to wait for
+        // the TX. *SEND INFO FOR THE (newly generated) ADDRESS & AMOUNT to another page with just the address & amount, which also gives a SUCCESS MSG.
 
 
-//You can also wait for a wallet transaction and halt the program execution until it arrives:
+        //You can also wait for a wallet transaction and halt the program execution until it arrives:
 
-//const options = {
-  //getTransactionInfo: true,
-  //getBalance: false,
-  //txHash: undefined
-//}
-//const response = await wallet.waitForTransaction(options);
+        //const options = {
+          //getTransactionInfo: true,
+          //getBalance: false,
+          //txHash: undefined
+        //}
+        //const response = await wallet.waitForTransaction(options);
 
 
-      //  Get USD price of 1 BCH to display using the built-in price-getter from mainnet.cash library
-      // TODO: Add a dropdown to select the currency and then save that preference in localStorage.getItem('currency'); Default: USD
-      let bchPrice = await convert(1, "bch", "usd");
-      if(bchPrice){ 
-        document.getElementById("bchprice").innerHTML = bchPrice;
-        thebchPrice = bchPrice;
-      }
+        //  Get USD price of 1 BCH to display using the built-in price-getter from mainnet.cash library
+        // TODO: Add a dropdown to select the currency and then save that preference in localStorage.getItem('currency'); Default: USD
+        let bchPrice = await convert(1, "bch", "usd");
+        if(bchPrice){ 
+          document.getElementById("bchprice").innerHTML = bchPrice;
+          thebchPrice = bchPrice;
+        }
 
       // MAINNET WALLET LOGIC to run only after wallet has been loaded/created.
       if(wallet){
@@ -301,7 +394,7 @@
           //Show the UtxoModal & refresh bal when it is closed by user
           document.getElementById('modalbtn').click();
 
-       });
+       }); // End wallet.watchAddressTransactions((tx) => {
 
       // never cancelWatch. Always keep Watching as long as page is open
 
@@ -323,14 +416,8 @@
           // await Mainnet.getAddrsByXpubKey("tpubDDfazrbXYF84Xxq7XqnakjAwVyCFVUGEWrsuQY3VqzpV8QgH2X2cczoZbEAyMdRmcra4nLhf67vEZ1jSnQ2KKcq5USoTGtFGaVTsXx7XsG7","0/0",5)
 
         } // END if(wallet){}
-      }else{
-        document.getElementById("newWalletView").style.display = "inline";
-      }
 
-    }); // END CONTENT LOADED LISTENER
-
-    // GENERAL CUSTOM FUNCTIONS
-    
+    } // End loadWallet(wallet)
     
     // Function to add event listener to SEND FORM for MANUAL bch amount changes - to then update the USD value being sent. This would allow the USD to track manual changes to send bal made by user.
     // This is broken because it interferes with the current checkbox change refresh // Might come back to it.
@@ -723,7 +810,7 @@
     // Custom function to enable/disable dark mode
     // TODO: REDO ALL OF THIS to do it correctly; this is some bad h4cks
     function toggleDarkMode() {
-      console.log('Toggling DARK mode');
+      console.log('Toggling D4RK mode');
       let currentBackground = document.getElementById('main').style.background;
       // already D4RK?
       if(currentBackground === "black"){
@@ -733,7 +820,7 @@
         document.getElementById('footer').style.background = "white";
         document.getElementById('sidebar').style.background = "white";
         document.getElementById('utxoTable').tHead.style.background = "none";
-
+        document.getElementById('thehtml').style.background = "white";
         //user prefers light mode;
         localStorage.setItem("theme", "light");
           //document.html.style.color = "white !important;"
@@ -805,6 +892,7 @@
         document.getElementById('header').style.background = "black";
         document.getElementById('footer').style.background = "black";
         document.getElementById('sidebar').style.background = "black";
+        document.getElementById('thehtml').style.background = "black";
 
         // make utxo table head dark
         document.getElementById("utxoTable").tHead.style.background = "black";
@@ -832,6 +920,7 @@
             cardicons[i].style.background = "black";
           }
           
+
         var navLinks = document.getElementsByClassName("nav-link");
           for (var i=0; i < navLinks.length; i++) {
             navLinks[i].style.background = "black";
@@ -893,6 +982,16 @@
           
           // make BCH price green again
           document.getElementById('bchprice').style.color = "#198754"; 
+
+          // color in fake buttons again
+          var buttonprimary = document.getElementsByClassName("button");
+          for (var i=0; i < buttonprimary.length; i++) {
+            buttonprimary[i].style.color = "black";
+          }
+
+          // color in mnemonic text box and derivation selector
+          document.getElementById("enterSeedphrase").style.color = "black";
+          document.getElementById("derivationPath").style.color = "black";
       }
     }
     
@@ -1278,9 +1377,9 @@ function colorLinks(hex)
     try {
       let text = document.getElementById('cashaddr').innerText;
       await navigator.clipboard.writeText(text);
-      console.log('Bitcoin Cash address copied to clipboard');
+      console.log('Bitcoin Cash address has been copied to clipboard');
     } catch (err) {
-      console.error('Failed to copy: ', err);
+      console.error('Failed to copy BCH address: ', err);
     }
   }
 
@@ -1295,6 +1394,7 @@ function colorLinks(hex)
   </script>
 
   <script type="text/javascript">
+    // TODO: MOVE THIS TO THE NORMAL JS SECTION AND DONT USE JQUERY
     $(document).ready(function(){
       //jQuery
       // Intantiate utxo DataTable after 3 seconds to allow proper UTXO hydration
@@ -1456,12 +1556,7 @@ function colorLinks(hex)
         </a>
       </li>
       
-      <li class="nav-item">
-        <a class="nav-link collapsed" onclick="window.print()" >
-          <i class="bi bi-printer-fill"></i>
-          <span>Print this Page</span>
-        </a>
-      </li>
+
       
       <li class="nav-item">
         <a class="nav-link collapsed" onClick="faq()" >
@@ -1494,6 +1589,13 @@ function colorLinks(hex)
           <span>Paper BCH Wallet</span>
         </a>
       </li>
+
+      <li class="nav-item">
+        <a class="nav-link collapsed" onclick="window.print()" >
+          <i class="bi bi-printer-fill"></i>
+          <span>Print this Page</span>
+        </a>
+      </li>
 </div>
       <!-- End F.A.Q Page Nav -->
 
@@ -1501,29 +1603,35 @@ function colorLinks(hex)
 
   </aside><!-- End Sidebar-->
 
-  <main id="main" class="main">
 
+
+  <main id="main" class="main" >
+
+<!-- if "isnew" = true this container will be displayed -->
     <div class="container">
-      <div id="newWalletView" class="hide">
-        <fieldset style="margin-top: 15px;">
-            <h4><img class="icon plusIcon" src="/images/plus-square.svg"> Create new wallet</h4>
+      <img id="beaneater" src="assets/img/beaneater.gif" style="opacity:0.7;margin-left:2em;margin-top:2em" />
+      <div id="newwalletview" class="hide">
+        <fieldset style="margin-top: 25px;">
+            <h4><i style="transform: rotate(-0.05turn);" class="bi bi-currency-bitcoin"></i> Create new wallet</h4>
             <input class="button primary" type="button" value="Create" onclick="createNewWallet()">
             <br><br>
             <hr>
             <br>
-            <h4><img class="icon importIcon" src="/images/log-in.svg"> Import existing wallet</h4> 
+            <h4><i style="transform: rotate(-0.05turn);" class="bi bi-currency-bitcoin"></i> Import existing wallet</h4> 
             <div>Enter mnemonic seed phrase</div>
-            <textarea style="resize: none;" id="enterSeedphrase" rows="3" cols="50" placeholder="word1 word2 ..."></textarea>
+            <textarea style="resize: none;width:100%" id="enterSeedphrase" rows="3" placeholder="word1 word2 ..."></textarea>
             <span>Derivation path: </span>
-            <select name="derivationPath" id="derivationPath" onchange="selectTokenType(event)">
-              <option value="standard">m/44’/145’/0’ (standard)</option>
-              <option value="bitcoinfotcom">m/44’/0’/0’ (bitcoin.com wallet)</option>
+            <select name="derivationPath" id="derivationPath"> <!-- onchange="selectDerivation(event)" -->
+              <option value="m/44'/145'/0'/0/0">m/44’/145’/0’/0/0 (standard HD wallet)</option>
+              <option value="m/44'/0'/0'/0/0">m/44'/0'/0'/0/0 (bitcoin.com wallet)</option>
             </select> <br>
             <input class="button primary" type="button" style="margin-top:15px" value="Import" onclick="importWallet()">
             <br><br>
         </fieldset>
       </div>
+    </div>
 
+<div id="walletexists" class="hide">
     <div class="pagetitle">
       <h1>Wallet Dashboard</h1>
       <nav>
@@ -2186,7 +2294,7 @@ function colorLinks(hex)
 
       </div>
     </section>
-
+</div>
   </main><!-- End #main -->
 
   <!-- ======= Footer ======= -->
