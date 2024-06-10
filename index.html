@@ -87,10 +87,12 @@
 
       // const userPrefersDark = false;
       // const walletExists = localStorage.getItem("isnew") === "false";
+
+      // Using the mainnet.cash wallet.namedExists() to check if user has created wallet
       const walletExists = await Wallet.namedExists(userid);
       console.log('Wallet Exists? ' + walletExists)
       
-      // Check if Wallet already exists?
+      // If the wallet exists, set the walletId
       if(walletExists){
 
         // if yes, get/set the walletid in localStorage.
@@ -370,11 +372,27 @@
           // Should watch only for INCOMING TXs.
 
           let txHash = tx.txid;
+
+          // Get all outputs
+          let outputs = tx.vout;
+
+          outputs.forEach(o => {
+            // if the output wallet address matches this wallet, it's a BINGO!
+            o.scriptPubKey.addresses.forEach(a => {
+              if(a === wallet.address){
+              // You have received vout.value BCH
+              // TODO: add USD value based on current price.
+              // let bchPrice = document.getElementById("bchprice").innerHTML
+                let usdval = o.value * bchPrice;
+                document.getElementById('txouts').innerHTML = '<span style="font-size:15pt;">' + o.value + ' BCH Received ($' + usdval + ').</span>';
+              }
+            })
+          })
+
+
           // window.alert('New unspent transaction output recieved. TX HASH = ' + txHash)
           
           // Wallet does not detect utxos on addresses generated, other than the first, or main deposit address.
-          // XXXX: Get New Deposit Address when a tx is detected.
-              // XXXX: Update HTML with new deposit addr
           
           // Get wallet Derivation path
           //let derPath = wallet.derivationPath;
@@ -518,28 +536,29 @@
 
         // TODO: first warn user about deleting wallet & ask them to back up seed phrase.
         
-        if (confirm('Are you sure you want to DELETE THIS BITCOIN CASH WALLET? This cannot be undone and a new wallet will be created upon page reload. Make sure to save the Mnemonic seed phrase first.')) {
+        if (confirm('Are you sure you want to DELETE THIS BITCOIN CASH WALLET? This cannot be undone. You will be prompted to create a new wallet, or restore an existing one. Make sure to save the Mnemonic seed phrase and Derivation first!')) {
           // Save it!
           var req = indexedDB.deleteDatabase(databaseName);
           req.onsuccess = function () {
               console.log("Deleted Bitcoin Cash wallet successfully.");
               alert('Deleted Bitcoin Cash wallet successfully. Please reload the page (Ctrl + R) to create a new wallet. DO NOT SEND BCH to this current wallet unless you have backed up your mnemonic seed phrase.');
-          };
+              location.reload(true);
+            };
           req.onerror = function () {
               console.log("Couldn't delete database for BCH wallet.");
               alert("Error... but it still probably deleted the wallet. You should refresh the page!");
-          };
+              location.reload(true);
+            };
           req.onblocked = function () {
               console.log("Couldn't delete database for BCH wallet due to the operation being blocked. It probably deleted it anyways though.");
-              // alert("Couldn't delete database for BCH wallet due to the operation being blocked.");
-          };
+              alert("Couldn't delete database for BCH wallet due to the operation being blocked.");
+              location.reload(true);
+            };
           
         } else {
           // Do nothing!
           console.log('Wallet was not deleted; user cancelled');
         }
-        // TODO: send back error/success msg to HTML - or just FORCE RELOAD
-
     }
 
     // Where el is the DOM element you'd like to test for visibility
@@ -1046,7 +1065,7 @@ function colorLinks(hex)
     }
     
 
-    // TODO: RUN THIS IF THE MODAL IS CLOSED IN ANY WAY. (Not just the "Close" button)
+    // RUN THIS IF THE MODAL IS CLOSED IN ANY WAY. (Not just the "Close" button)
     async function reloadBal() {
       console.log('Reload Balance (& UTXOs) func kicked off...');
 
@@ -1116,13 +1135,14 @@ function colorLinks(hex)
             tbody.innerHTML += tr;
         }
 
+        // TODO: Figure out why the utxo selection STOPS working after the reloadBal() function is run !!!
 
     } // end reloadBal()
 
     function getNewDepositAddr() {
       // TODO: add this funcitonality when mainnet.js can scan/use other addresses for funds. Right now it's only the one address that you can (EASILY) send/recieve on.
     }
-          // ADD NOTIFICATION'
+          // Create a NEW NOTIFICATION for any incoming transactions
           let notifLength2 = 0;
     function createNotif(txHash) {
 
@@ -1151,6 +1171,7 @@ function colorLinks(hex)
       let text = document.getElementById('cashaddr').innerText;
       console.log('text to copy is... ' + text);
       navigator.clipboard.writeText(text.trim());
+      alert('The Deposit address was copied to clipboard.');
     }
     
 
@@ -1394,7 +1415,7 @@ function colorLinks(hex)
   </script>
 
   <script type="text/javascript">
-    // TODO: MOVE THIS TO THE NORMAL JS SECTION AND DONT USE JQUERY
+    // TODO: KICK OFF FUNCTION ONLY AFTER UTXOs are HYDRATED, MOVE THIS TO THE NORMAL JS SECTION AND DONT USE JQUERY ***
     $(document).ready(function(){
       //jQuery
       // Intantiate utxo DataTable after 3 seconds to allow proper UTXO hydration
@@ -1609,7 +1630,7 @@ function colorLinks(hex)
 
 <!-- if "isnew" = true this container will be displayed -->
     <div class="container">
-      <img id="beaneater" src="assets/img/beaneater.gif" style="opacity:0.7;margin-left:2em;margin-top:2em" />
+      <img id="beaneater" src="assets/img/beaneater.gif" style="opacity:0.6;margin-left:2em;margin-top:2em" />
       <div id="newwalletview" class="hide">
         <fieldset style="margin-top: 25px;">
             <h4><i style="transform: rotate(-0.05turn);" class="bi bi-currency-bitcoin"></i> Create new wallet</h4>
@@ -1831,52 +1852,11 @@ function colorLinks(hex)
                             <button type="button" class="btn-close" onClick="reloadBal()" data-bs-dismiss="modal" aria-label="Close"></button>
                           </div>
                           <div id="txdetectbody" class="modal-body">
-                            A new Transaction ID / Hash has been detected for your Deposit Address - <span id="cashaddr2"></span>.  The TX Hash is <span id="txhash">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>.<br /><br />
+                            A new incoming transaction has been detected for your Deposit Address - <span id="cashaddr2"></span>.  The TX Hash is <span id="txhash">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>.<br /><br />
 
                             <span id="txouts"></span>
                           
-  <!-- TODO: for each vout () 
-                          if(scriptPubKey.addresses === wallet.address){
-                            You have received vout.value BCH
-                          }
-                          
-{
-    "hash": "47d14af6ba7755237cef8a86632c6190e83e76f259c3e4c4017cf6b20b1a41b0",
-    "hex": "01000000016d34d72ee8ad69c277abece2d49311bdb003eecd5f11f6cfcb1926d912dac91405000000644198f68757e544c8e07d04e8282134c8b0cb63996962709c70b0fc5907f66e03c12a9d483bb4e9c406f30454621ea8cedc1ecffdf7542e5b6afafce4f065541033412102da2fddf666fe31cc520fe49fbc9934647f55d032b1653bf1bc211bab3b745096feffffff01b7ff0100000000001976a914c2e441c97def66d612565291c6b5e955f4388cfa88ac6cd70c00",
-    "locktime": 841580,
-    "size": 185,
-    "txid": "47d14af6ba7755237cef8a86632c6190e83e76f259c3e4c4017cf6b20b1a41b0",
-    "version": 1,
-    "vin": [
-        {
-            "scriptSig": {
-                "asm": "98f68757e544c8e07d04e8282134c8b0cb63996962709c70b0fc5907f66e03c12a9d483bb4e9c406f30454621ea8cedc1ecffdf7542e5b6afafce4f065541033[ALL|FORKID] 02da2fddf666fe31cc520fe49fbc9934647f55d032b1653bf1bc211bab3b745096",
-                "hex": "4198f68757e544c8e07d04e8282134c8b0cb63996962709c70b0fc5907f66e03c12a9d483bb4e9c406f30454621ea8cedc1ecffdf7542e5b6afafce4f065541033412102da2fddf666fe31cc520fe49fbc9934647f55d032b1653bf1bc211bab3b745096"
-            },
-            "sequence": 4294967294,
-            "txid": "14c9da12d92619cbcff6115fcdee03b0bd1193d4e2ecab77c269ade82ed7346d",
-            "vout": 5
-        }
-    ],
-    "vout": [
-        {
-            "n": 0,
-            "scriptPubKey": {
-                "addresses": [
-                    "bitcoincash:qrpwgswf0hhkd4sj2effr344a92lgwyvlglsu88vn7"
-                ],
-                "asm": "OP_DUP OP_HASH160 c2e441c97def66d612565291c6b5e955f4388cfa OP_EQUALVERIFY OP_CHECKSIG",
-                "hex": "76a914c2e441c97def66d612565291c6b5e955f4388cfa88ac",
-                "reqSigs": 1,
-                "type": "pubkeyhash"
-            },
-            "value": 0.00130999
-        }
-    ]
-}
-
-
-                          -->
+  
                           
                           </div>
 
@@ -1917,7 +1897,7 @@ function colorLinks(hex)
                               </h2>
                               <div id="faqsOne-1" class="accordion-collapse collapse" data-bs-parent="#faq-group-1" style="">
                                 <div class="accordion-body">
-                                  BCH Admin is a non-custodial & serverless Bitcoin Cash Web Wallet. Private keys are safely stored within your browser. To learn more about how the Bitcoin Cash wallet is created and persisted, visit <a href="https://mainnet.cash/tutorial" target="_blank">Mainnet.cash</a>. The BCH wallet created and persisted is local to the [ browser / device / domain ] that is used. This means if you use a different device, browser or domain, then a different wallet will be created. Be sure to back up your Mnemonic Seed Phrase and Derivation Path so that you can restore your BCH on any other Bitcoin Cash wallet. 
+                                  BCH Admin is a non-custodial & serverless Bitcoin Cash Web Wallet. Private keys are safely stored within your browser. To learn more about how the Bitcoin Cash wallet is created and persisted, visit <a href="https://mainnet.cash/tutorial" target="_blank">Mainnet.cash</a>. The BCH wallet created and persisted is local to the [ browser / device / domain ] that is used. This means if you use a different device, browser or domain, then a different wallet will be created. Be sure to back up your <a href="https://learnmeabitcoin.com/technical/keys/hd-wallets/mnemonic-seed/" target="_blank">Mnemonic Seed Phrase</a> and <a href="https://learnmeabitcoin.com/technical/keys/hd-wallets/derivation-paths/" target="_blank">Derivation Path</a> so that you can restore your BCH on any other Bitcoin Cash wallet. 
                                 </div>
                               </div>
                             </div>
