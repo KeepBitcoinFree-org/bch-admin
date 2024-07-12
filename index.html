@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html id="thehtml" lang="en">
 
 <head>
   <meta charset="utf-8">
@@ -13,7 +13,7 @@
   <link href="assets/img/bitcoin-cash-circle-icon-192.png" rel="icon">
   <link href="assets/img/bitcoin-cash-circle-icon-192.png" rel="apple-touch-icon">
 
-  <!-- Google Fonts -->
+  <!-- Google Fonts TODO: Replace with included static/downloaded fonts -->
   <link href="https://fonts.gstatic.com" rel="preconnect">
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
   <!--   <link href="assets/css/opensans.css" rel="stylesheet"> -->
@@ -32,19 +32,19 @@
 
 <!--
   * ========================================
-  * BCH Admin was created by KeepBitcoinFree.org for use locally as a Bitcoin Cash Web Wallet.
-  * Uses the mainnet-js library & the library is hosted locally to the app - https://mainnet.cash
-  * The applcation is serverless. All Private Keys are stored locally in the browser's IndexedDB Storage. The website uses clientside Javascript for everything.
-  * There is no server and no database. Only the html, css & javascript files are hosted on an web server. These files can be downloaded and hosted locally; only an internet connection is required to create a wallet and send/recieve BCH.
+  * BCH Admin was created by KeepBitcoinFree.org as a personal project in 2023.
+  * It uses the mainnet-js library & all libraries are hosted locally to the app. Learn more about https://mainnet.cash
+  * The wallet is serverless and uses vanilla client-side JavaScript. All Private Keys are created and stored locally in the browser's IndexedDB Storage.
+  * The source code consists of the HTML page and other assets: css & javascript files, hosted locally. These files can be downloaded and run locally; only an internet connection and a browser capable of running JavaScript is required to create a new wallet, send/recieve BCH, or sign/verify a message.
   *
   * For now 1 cookie/browser/website (combo) = one user/wallet. Keys are stored within the indexedDB in the local user's browser and local to that device, browser & website.
   *
   * Using a private session will create a new wallet each time the website is opened.
   * TODO: *Maybe* add ability to create user & log-in so the user could create multiple wallets for each user.
-  * TODO: Add functionality to generate & print a PAPER WALLET. Currently link to paper.keepbitcoinfree.org
-  * TODO: Add functionality to restore a wallet from seed
-  * TODO: Add functionality for PointOfSale system. Use the xpub key to display a screen that has a new address for each order. Watch that address while open, etc.
-  * From the xPub, we generate addresses starting from the first address in the sequence, and a new address from the next one in the sequence for every new order, using the BIP44 derivation path.
+  * DONE: Added functionality to print the webpage as a PAPER WALLET. Also link to paper.keepbitcoinfree.org for an official BCH paper wallet.
+  * TODO: Add functionality to restore a wallet from seed *En progress.
+  * TODO: Add functionality for PointOfSale system. Use the xpub key to display a screen that has a new address for each order. Watch that address while open, and generate success modal/page etc.
+  * - From the xPub, we generate addresses starting from the first address in the sequence, and a new address from the next one in the sequence for every new order, using the BIP44 derivation path.
   * =======================================
 -->
 
@@ -60,7 +60,7 @@
   <script src="assets/js/jquery-3.6.4.min.js"></script>
   <script src="assets/js/jquery.dataTables.min.js"></script>
 
-  <!-- Custom Wallet Functionality JavaScript - written by Zatoshi - https://github.com/KeepBitcoinFree-org -->
+  <!-- Custom Wallet Functionality JavaScript - written by Zatoshi - https://github.com/KeepBitcoinFree-org - utilizing the open source Mainnet.cash JS Library -->
   <script type="text/javascript">
       
       // Global Vars \\
@@ -72,10 +72,7 @@
       const US = new Intl.NumberFormat();
       let thebchPrice = 0;
 
-      // const userPrefersDark = false;
-      const walletExists = localStorage.getItem("isnew") === "false";
-
-    // Run when the DOM Content has been loaded  
+    // RUN when the DOM Content has been loaded  
     document.addEventListener("DOMContentLoaded", async (event) => {
       globalThis.exports = globalThis.exports || {};
       Object.assign(globalThis, await __mainnetPromise);
@@ -86,63 +83,242 @@
       // Get and Print Date to console
       let date = Date.now();
       console.log('Date is... ' + date);
-      console.log('userid = '+userid);
-      
-      // Check persistent theme dark/light mode from IndexedDB.
+      console.log('userid = ' + userid);
+
       // const userPrefersDark = false;
-      const userPrefersDark = localStorage.getItem("theme") === "dark";
-      if(userPrefersDark){
-       // toggleDarkMode()
-        document.getElementById('darkmode').click();
-      }
+      // const walletExists = localStorage.getItem("isnew") === "false";
 
-
-      // TODO: Check if wallet already exists, if not prompt user to create a new one OR to *RESTORE FROM SEED* using MODAL.
-
-
-
-
-      // Creates new/loads existing TESTNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
-      // const tWallet = await TestNetWallet.named(userid);
-      // tWallet.balance = await tWallet.getBalance();
+      // Using the mainnet.cash wallet.namedExists() to check if user has created wallet
+      const walletExists = await Wallet.namedExists(userid);
+      console.log('Wallet Exists? ' + walletExists)
       
-      
+      // If the wallet exists, set the walletId
+      if(walletExists){
 
-      // Creates new/loads existing MAINNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
-      const wallet = await Wallet.named(userid);
-      console.log('Mainnet BCH wallet has been created... ', wallet);
-      localStorage.setItem("isnew", "false");
+        // if yes, get/set the walletid in localStorage.
+        let walletId = localStorage.getItem("walletId");
+          if(!walletId || walletId === ''){
+           //wallet exists BUT the walletId hasn't yet been set. That means it's an old wallet (using the default derivation)
+           //Create the named wallet (with userid) and create/set the walletId in localStorage **This will preserve old/previously created wallets.
+           const wallet = await Wallet.named(userid);
 
-      // TODO: Make Heirarchical Derivation (HD node) - using new addresses for each new utxo. 
-      // Using default Electron-Cash "BIP44" Derivation Path to make importing to ElectronCash easier, not Bitcoin.com's multi-coin wallet.
-      // const wallet = await Wallet.fromSeed(wallet1.mnemonic, "m/44'/1'/145'/0/0");
-      
-      if( wallet.derivationPath !== "m/44'/1'/145'/0/0"){
-        console.log('Wallet is NOT using BIP44 Derivation path');
+           const derivation = wallet.derivationPath;
+           // ISSUE - default derivation is "m/44'/0'/0'/0/0"
+           // ** WHEN CREATING A NEW WALLET, I'LL NEED TO CREATE ONE, THEN USE THAT SEED TO CREATE A NEW ONE WITH THE CORRECT DERIVATION
+           // use the userid to create wallet1, then use that seed to create wallet with proper derivation.
+           const seed = wallet.mnemonic;
+           // const derivationPath = "m/44'/145'/0'/0/0";
+           // Create user wallet using supplied seed & derivation path.
+           walletId = 'seed:mainnet:' + seed + ':' + derivation;
+           localStorage.setItem("walletId", walletId);
+           console.log('walletId created from existing wallet - ' + walletId);
+            // Get Wallet Balance
+          wallet.balance = await wallet.getBalance();
+         // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
+         wallet.utxos = await wallet.getUtxos();
+         // Load the wallet
+          loadWallet(wallet);
+
+          }else{
+            console.log('walletId is not blank, value = ' + walletId);
+            const wallet = await Wallet.replaceNamed(userid, walletId);
+            // Get Wallet Balance
+            wallet.balance = await wallet.getBalance();
+            // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
+            wallet.utxos = await wallet.getUtxos();
+            // Load the wallet
+            loadWallet(wallet);
+          }
+
+        
+        
       }else{
-        console.log('Wallet IS using BIP44 Derivation path');
+        // Wallet does not exist, show newwalletview div.
+        document.getElementById("newwalletview").classList.remove('hide');
+        // Hide the loader afterwards
+        document.getElementById("beaneater").classList.add('hide');
+        //document.getElementById("newWalletView").style.display = "inline";
       }
-      
-      // TODO: add functionality to allow user to restore from seed phrase, or WIF private key.
-      // const wallet = await Wallet.fromSeed("horse duck stapler...", "m/44'/1'/145'/0/0");
-      //const wallet = await Wallet.fromWIF('.....');
-      // wallet.privateKeyWif
-      // wallet.mnemonic
-      // wallet.derivationPath
-      
-      // Get current wallet Derivation path and display for user.
-      let derPath = wallet.derivationPath;
-      console.log('DERIVATION PATH FOR WALLET = ' + derPath);
-      document.getElementById("derivation").innerHTML = derPath;
-      document.getElementById("derivation1").innerHTML = derPath;
-      
-      
-      // Get Wallet Balance
-      wallet.balance = await wallet.getBalance();
-      
-      // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
-      wallet.utxos = await wallet.getUtxos();
-      // DEBUG console.log('all wallet UTXOs = ' + JSON.stringify(wallet.utxos, null, 4));
+
+    }); // END CONTENT LOADED LISTENER
+
+    // GENERAL CUSTOM FUNCTIONS
+    function watchUtxoCheckboxes(wallet) {
+          if(wallet.utxos.length > 0) { 
+      //  function to watchUtxoCheckboxes & calculate the SendTotal {
+      setTimeout( function(){  
+      // console.log('watching utxo checkboxes...'); 
+          var inputs = document.getElementsByClassName('coinsum'),
+          total  = document.getElementById('send-total'),
+          totalUsd = document.getElementById('send-totalusd');
+          
+          // when sendmax checkbox is checked, select all coinsum inputs.
+          var inputMax = document.getElementById('sendmax');
+          inputMax.onchange = function() {
+
+
+            for (var i=0; i < inputs.length; i++) {
+              console.log('Input ' + i + '. input.checked = ' + inputs[i].checked);
+                        
+              if(inputMax.checked === true){
+                // first reset send-total to 0, in case user entered custom amounts.
+              // total.value = 0;
+              
+              // if it's not already selected, click the checkbox.
+                if(inputs[i].checked === false){
+                  inputs[i].click();
+                }
+              }else{
+                // inputMax was unselected.
+                // if it's IS already selected, click the checkbox to unselect.
+                if(inputs[i].checked === true){
+                  inputs[i].click();
+                }
+              }
+            } // END SENDMAX FOR
+          }
+          
+          //console.log('INPUTS.length = ' + inputs.length);
+                  
+          for (var i=0; i < inputs.length; i++) {
+            // Everytime one of the checkboxes are changed (clicked/unclicked) this funtion is run. 
+            // ISSUE: For some reason, after modal close and balance refresh function runs successfully, this no longer works to monitor input checkboxes.
+            // TODO: Test out methods of onclick or onchange or oninput. Right now this is nested inside of a timeout func.
+            inputs[i].onchange = function() {            
+                // Inputs changed, one was selected or de-selected. 
+                
+                // First reset send-total to 0, just in case the user entered a custom amount.
+                // Only do this if it's been selected, not  de-selected.
+              //  if(this.checked){
+              //   total.value = 0;
+              //  }
+                // Recaclulating totals
+                var checkedUtxosArray = new Array();
+                console.log('inputs have changed, caclulating coinsum totals ');
+                var add = this.value * (this.checked ? 1 : -1);
+                // Convert add (in satoshis) to BCH
+                add = (add / 100000000)
+                
+                //add.toFixed(8)
+                console.log('add = ' + add);
+                var totalValue = (parseFloat(total.value) + add).toFixed(8);
+              // send-total-amount.value = totalValue;
+                total.value = totalValue;
+                
+                //TODO: move bchPrice grab to here to always get latest price. Currently using price that was generated on page load.
+                var totalUsdVal = US.format(total.value * thebchPrice)
+                // Showing user the totals
+                totalUsd.innerHTML = totalUsdVal;
+                // Debug console log
+                console.log('total.value = '+ total.value);
+                    
+                // TODO: Create a separate array of TXIDs and add this info into the SEND FORM!!! *****
+                
+                
+              // var sendTxidList = document.getElementsByClassName('txidsum');
+              }
+            }
+          }, 5000);
+        } // end if wallet.uxtos.length > 0
+
+    } // end watchUtxoCheckboxes()
+        // async function to create a new wallet
+      async function createNewWallet() {
+        
+        // Use promises? 
+        //     return new Promise(async (resolve, reject) => {
+        // set the derivation path, DEFAULT now being the standard HD wallet that most other wallets use - "m/44'/145'/0'/0/0;
+        const derivation = "m/44'/145'/0'/0/0";
+        // ISSUE - default derivation is "m/44'/0'/0'/0/0"
+        // ** WHEN CREATING A NEW WALLET, I'LL NEED TO CREATE ONE, THEN USE THAT SEED TO CREATE A NEW ONE WITH THE CORRECT DERIVATION
+        // use the userid to create wallet1, then use that seed to create wallet with proper derivation.
+        const wallet1 = await Wallet.named(userid);
+
+        const seed = wallet1.mnemonic;
+        // const derivationPath = "m/44'/145'/0'/0/0";
+        // Create user wallet using supplied seed & derivation path.
+        const walletId = 'seed:mainnet:' + seed + ':' + derivation;
+        // Save the walletId for later use - 
+        localStorage.setItem("walletId", walletId);
+        // Load/create the wallet.
+        const wallet = await Wallet.replaceNamed(userid, walletId);
+
+        // Get Wallet Balance
+        wallet.balance = await wallet.getBalance();
+        
+        // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
+        wallet.utxos = await wallet.getUtxos();
+
+        // Load the wallet
+        loadWallet(wallet);
+      }
+        
+
+
+     // function to import a wallet using a 12 word mnemonic seed phrase & derivation path.
+     async function importWallet() {
+        // grab selected derivation path 
+        const d = document.getElementById('derivationPath');
+        var derivation = d.options[d.selectedIndex].value;
+        // grab user entered seed phrase
+        const seed = document.getElementById('enterSeedphrase').value.trim();
+        // Create user wallet using supplied seed & derivation path.
+        const walletId = 'seed:mainnet:' + seed + ':' + derivation;
+        // Save the walletId for later use - 
+        localStorage.setItem("walletId", walletId);
+        // Create the wallet.
+        const wallet = await Wallet.replaceNamed(userid, walletId);
+
+        // Get Wallet Balance
+        wallet.balance = await wallet.getBalance();
+        // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
+        wallet.utxos = await wallet.getUtxos();
+        // Load the wallet
+        loadWallet(wallet);
+        }
+
+        // function to load the wallet
+    async function loadWallet(wallet) {
+        // Show the wallet details
+        document.getElementById("walletexists").classList.remove('hide');
+        // Hide the new wallet view
+        document.getElementById("newwalletview").classList.add('hide');
+        document.getElementById("beaneater").classList.add('hide');
+        // Check persistent theme dark/light mode from IndexedDB.
+        const userPrefersDark = localStorage.getItem("theme") === "dark";
+        
+        if(userPrefersDark){
+        // click the button to trigger d4rk mode if user Prefers D4rk
+          document.getElementById('darkmode').click();
+        }
+        
+        console.log('Mainnet BCH wallet has been created... ', wallet);
+        localStorage.setItem("isnew", "false");
+
+        // TODO: Make Heirarchical Derivation (HD node) - using new addresses for each new utxo. 
+        // Using default Electron-Cash "BIP39" Derivation Path to make importing to ElectronCash easier, not Bitcoin.com's multi-coin wallet.
+        // const wallet = await Wallet.fromSeed(wallet1.mnemonic, "m/44'/145'/0'/0/0");
+        
+        if( wallet.derivationPath !== "m/44'/145'/0'/0/0"){
+          console.log('Wallet is NOT using BIP39 Derivation path');
+        }else{
+          console.log('Wallet IS using BIP39 Derivation path');
+        }
+        
+        // TODO: add functionality to allow user to restore from seed phrase, or WIF private key.
+        // const wallet = await Wallet.fromSeed("horse duck stapler...", "m/44'/1'/145'/0/0");
+        //const wallet = await Wallet.fromWIF('.....');
+        // wallet.privateKeyWif
+        // wallet.mnemonic
+        // wallet.derivationPath
+        
+        // Get current wallet Derivation path and display for user.
+        let derPath = wallet.derivationPath;
+        console.log('DERIVATION PATH FOR WALLET = ' + derPath);
+        document.getElementById("derivation").innerHTML = derPath;
+        document.getElementById("derivation1").innerHTML = derPath;
+        
+        // DEBUG console.log('all wallet UTXOs = ' + JSON.stringify(wallet.utxos, null, 4));
         console.log('Hydrating UTXO Table...');
         
         //set utxo length
@@ -153,8 +329,8 @@
 
         // TODO: Make it load the Datatabes ONLY AFTER the for loop has finished loading all utxos (currently using jQuery to do this after 3 seconds but it needs to only do it after it has finished.
 
-    //    var tr1 = "<thead><tr><th scope='col'>TxID</th><th scope='col'>Satoshis</th><th scope='col'>Height</th><th scope='col'>Status</th></tr></thead>";
-     //   tbody.innerHTML = tr1;
+        //    var tr1 = "<thead><tr><th scope='col'>TxID</th><th scope='col'>Satoshis</th><th scope='col'>Height</th><th scope='col'>Status</th></tr></thead>";
+        //   tbody.innerHTML = tr1;
         
         for (var i = 0; i < wallet.utxos.length; i++) {
             
@@ -174,7 +350,7 @@
             var tr = "<tr><td><input class='coinsum' type='checkbox' value='" + satoshis +  "' name='" + txid + ":" + vout + "'></td>";
             // onClick='calculateSendTotal()'></td>";
             
-            //Add in link for txid to block explorer... or to nodebox?
+            //Add in link for txid to blockchair BCH block explorer.
             let txHashURL = '<a href="https://blockchair.com/bitcoin-cash/transaction/' + txid + '" target="_blank">' + txid + '</a>'
 
             
@@ -189,29 +365,29 @@
         } // END DataTable UTXO HYDRATION
 
 
-// TODO: Create separate page for Point of Sale (PoS) system/functionality. Then use the below to essentially pause everything to wait for
-// the TX. *SEND INFO FOR THE (newly generated) ADDRESS & AMOUNT to another page with just the address & amount, which also gives a SUCCESS MSG.
+        // TODO: Create separate page for Point of Sale (PoS) system/functionality. Then use the below to essentially pause everything to wait for
+        // the TX. *SEND INFO FOR THE (newly generated) ADDRESS & AMOUNT to another page with just the address & amount, which also gives a SUCCESS MSG.
 
 
-//You can also wait for a wallet transaction and halt the program execution until it arrives:
+        //You can also wait for a wallet transaction and halt the program execution until it arrives:
 
-//const options = {
-  //getTransactionInfo: true,
-  //getBalance: false,
-  //txHash: undefined
-//}
-//const response = await wallet.waitForTransaction(options);
+        //const options = {
+          //getTransactionInfo: true,
+          //getBalance: false,
+          //txHash: undefined
+        //}
+        //const response = await wallet.waitForTransaction(options);
 
 
-      //  Get USD price of 1 BCH to display using the built-in price-getter from mainnet.cash library
-      // TODO: Add a dropdown to select the currency and then save that preference in localStorage.getItem('currency'); Default: USD
-      let bchPrice = await convert(1, "bch", "usd");
-      if(bchPrice){ 
-        document.getElementById("bchprice").innerHTML = bchPrice;
-        thebchPrice = bchPrice;
-      }
+        //  Get USD price of 1 BCH to display using the built-in price-getter from mainnet.cash library
+        // TODO: Add a dropdown to select the currency and then save that preference in localStorage.getItem('currency'); Default: USD
+        let bchPrice = await convert(1, "bch", "usd");
+        if(bchPrice){ 
+          document.getElementById("bchprice").innerHTML = bchPrice;
+          thebchPrice = bchPrice;
+        }
 
-      // MAINNET WALLET LOGIC after wallet has been loaded/created.
+      // MAINNET WALLET LOGIC to run only after wallet has been loaded/created.
       if(wallet){
         let notifLength = 0;
 
@@ -228,6 +404,7 @@
         // Add Deposit Addr QR code to HTML.
         document.querySelector('#depositqr').src = wallet.getDepositQr().src;
         
+        // TODO: Use pubx key to generate addresses for Point of Sale page. This page could auto-generate new addresses each time funds are received. It could also send any funds recieved back to the main wallet "receive" address so they aren't lost.
         // Use derivation path to get PubKeys to create additional recieve addresses (if needed?)
         //await wallet.getXPubKeys();
       
@@ -273,11 +450,27 @@
           // Should watch only for INCOMING TXs.
 
           let txHash = tx.txid;
+
+          // Get all outputs
+          let outputs = tx.vout;
+
+          outputs.forEach(o => {
+            // if the output wallet address matches this wallet, it's a BINGO!
+            o.scriptPubKey.addresses.forEach(a => {
+              if(a === wallet.address){
+              // You have received vout.value BCH
+              // TODO: add USD value based on current price.
+              // let bchPrice = document.getElementById("bchprice").innerHTML
+                let usdval = o.value * bchPrice;
+                document.getElementById('txouts').innerHTML = '<span style="font-size:15pt;">' + o.value + ' BCH Received ($' + usdval + ').</span>';
+              }
+            })
+          })
+
+
           // window.alert('New unspent transaction output recieved. TX HASH = ' + txHash)
           
           // Wallet does not detect utxos on addresses generated, other than the first, or main deposit address.
-          // XXXX: Get New Deposit Address when a tx is detected.
-              // XXXX: Update HTML with new deposit addr
           
           // Get wallet Derivation path
           //let derPath = wallet.derivationPath;
@@ -290,14 +483,14 @@
           // await Mainnet.getAddrsByXpubKey("tpubDDfazrbXYF84Xxq7XqnakjAwVyCFVUGEWrsuQY3VqzpV8QgH2X2cczoZbEAyMdRmcra4nLhf67vEZ1jSnQ2KKcq5USoTGtFGaVTsXx7XsG7","0/0",5)
 
 
-          // ADD NOTIFICATION
+          // Create NOTIFICATION for new address displayed in top right of screen
           createNotif(txHash);
 
 
           //Show the UtxoModal & refresh bal when it is closed by user
           document.getElementById('modalbtn').click();
 
-       });
+       }); // End wallet.watchAddressTransactions((tx) => {
 
       // never cancelWatch. Always keep Watching as long as page is open
 
@@ -318,133 +511,43 @@
           // use PubKeys to get more Addrs
           // await Mainnet.getAddrsByXpubKey("tpubDDfazrbXYF84Xxq7XqnakjAwVyCFVUGEWrsuQY3VqzpV8QgH2X2cczoZbEAyMdRmcra4nLhf67vEZ1jSnQ2KKcq5USoTGtFGaVTsXx7XsG7","0/0",5)
 
-      } // END if(wallet){}
-    }); // END CONTENT LOADED LISTENER
+  // FUNCTION TO WATCH UTXO CHECKBOXES AND RE-CALC TOTALS BASED ON INPUT CHANGES
+  watchUtxoCheckboxes(wallet);
 
-    // GENERAL CUSTOM FUNCTIONS
-    
-    
-    // Function to add event listener to SEND FORM for MANUAL bch amount changes - to then update the USD value being sent. This would allow the USD to track manual changes to send bal made by user.
-    // This is broken because it interferes with the current checkbox change refresh // Might come back to it.
-    //var sendTitleInput = document.getElementById('send-total');
-    //sendTitleInput.addEventListener("change", function(){
-      ////TODO: recalcuate the USD value and then set that.
-        //var totalUsd = document.getElementById('send-totalusd'),
-        //totalToSend = sendTitleInput.value,
-        //totalUsdVal = US.format(totalToSend * thebchPrice);
-        //// Showing user the totals
-        //totalUsd.innerHTML = totalUsdVal;
-        //// Debug console log
-        //console.log('total.value = '+ total.value);
-								
-      //});
+    } // END if(wallet){}
 
-    // FUNCTION TO WATCH UTXO CHECKBOXES AND RE-CALC TOTALS BASED ON INPUT CHANGES
- //  function calculateSendTotal() {
-  setTimeout( function(){  
-   // console.log('watching utxo checkboxes...'); 
-      var inputs = document.getElementsByClassName('coinsum'),
-      total  = document.getElementById('send-total'),
-      totalUsd = document.getElementById('send-totalusd');
-      
-      // when sendmax checkbox is checked, select all coinsum inputs.
-      var inputMax = document.getElementById('sendmax');
-      inputMax.onchange = function() {
+} // End loadWallet(wallet)
 
-
-        for (var i=0; i < inputs.length; i++) {
-          console.log('Input ' + i + '. input.checked = ' + inputs[i].checked);
-							      
-          if(inputMax.checked === true){
-            // first reset send-total to 0, in case user entered custom amounts.
-           // total.value = 0;
-          
-          // if it's not already selected, click the checkbox.
-            if(inputs[i].checked === false){
-              inputs[i].click();
-            }
-          }else{
-            // inputMax was unselected.
-            // if it's IS already selected, click the checkbox to unselect.
-            if(inputs[i].checked === true){
-              inputs[i].click();
-            }
-          }
-        } // END SENDMAX FOR
-      }
-      
-      //console.log('INPUTS.length = ' + inputs.length);
-							
-      for (var i=0; i < inputs.length; i++) {
-        // Everytime one of the checkboxes are changed (clicked/unclicked) this funtion is run. 
-        // ISSUE: For some reason, after modal close and balance refresh function runs successfully, this no longer works to monitor input checkboxes.
-        // TODO: Test out methods of onclick or onchange or oninput. Right now this is nested inside of a timeout func.
-        inputs[i].onchange = function() {            
-            // Inputs changed, one was selected or de-selected. 
-            
-            // First reset send-total to 0, just in case the user entered a custom amount.
-            // Only do this if it's been selected, not  de-selected.
-          //  if(this.checked){
-          //   total.value = 0;
-          //  }
-            // Recaclulating totals
-            var checkedUtxosArray = new Array();
-            console.log('inputs have changed, caclulating coinsum totals ');
-            var add = this.value * (this.checked ? 1 : -1);
-            // Convert add (in satoshis) to BCH
-            add = (add / 100000000)
-            
-            //add.toFixed(8)
-            console.log('add = ' + add);
-            var totalValue = (parseFloat(total.value) + add).toFixed(8);
-           // send-total-amount.value = totalValue;
-            total.value = totalValue;
-            
-            //TODO: move bchPrice grab to here to always get latest price. Currently using price that was generated on page load.
-            var totalUsdVal = US.format(total.value * thebchPrice)
-            // Showing user the totals
-            totalUsd.innerHTML = totalUsdVal;
-            // Debug console log
-            console.log('total.value = '+ total.value);
-								
-            // TODO: Create a separate array of TXIDs and add this info into the SEND FORM!!! *****
-            
-            
-           // var sendTxidList = document.getElementsByClassName('txidsum');
-          }
-        }
-      }, 5000);
-    
     // Function to allow user to Delete their bitcoincash wallet (and start anew). For some reason, it says it fails to delete, but it actually does delete it.
     // TODO: Should force a reload of the page after delete so user doesn't accidentally send coins to old wallet.
     function deleteWallet() {
 
       let databaseName = "bitcoincash";
-
-        // TODO: first warn user about deleting wallet & ask them to back up seed phrase.
         
-        if (confirm('Are you sure you want to DELETE THIS BITCOIN CASH WALLET? This cannot be undone and a new wallet will be created upon page reload. Make sure to save the Mnemonic seed phrase first.')) {
+        if (confirm('Are you sure you want to DELETE THIS BITCOIN CASH WALLET? This cannot be undone. Once you confirm, the wallet will be reset and you will be prompted to create a new wallet, or restore an existing one. Make sure to save the Mnemonic Seed Phrase and Derivation Path first so you can restore it later!')) {
           // Save it!
           var req = indexedDB.deleteDatabase(databaseName);
           req.onsuccess = function () {
               console.log("Deleted Bitcoin Cash wallet successfully.");
               alert('Deleted Bitcoin Cash wallet successfully. Please reload the page (Ctrl + R) to create a new wallet. DO NOT SEND BCH to this current wallet unless you have backed up your mnemonic seed phrase.');
-          };
+              location.reload(true);
+            };
           req.onerror = function () {
               console.log("Couldn't delete database for BCH wallet.");
               alert("Error... but it still probably deleted the wallet. You should refresh the page!");
-          };
+              location.reload(true);
+            };
           req.onblocked = function () {
               console.log("Couldn't delete database for BCH wallet due to the operation being blocked. It probably deleted it anyways though.");
-              // alert("Couldn't delete database for BCH wallet due to the operation being blocked.");
-          };
+              // This error always comes up... but it does actually delete the wallet and reset everything.
+              //alert("Couldn't delete database for BCH wallet due to the operation being blocked.");
+              location.reload(true);
+            };
           
         } else {
           // Do nothing!
           console.log('Wallet was not deleted; user cancelled');
         }
-        // TODO: send back error/success msg to HTML - or just FORCE RELOAD
-
     }
 
     // Where el is the DOM element you'd like to test for visibility
@@ -530,6 +633,8 @@
 
                 // Reset the BCH Send Form
                 resetSendBCHform();
+
+                //TODO: After send, run the reloadBal() 
                 
               }
 
@@ -715,7 +820,7 @@
     // Custom function to enable/disable dark mode
     // TODO: REDO ALL OF THIS to do it correctly; this is some bad h4cks
     function toggleDarkMode() {
-      console.log('Toggling DARK mode');
+      console.log('Toggling D4RK mode');
       let currentBackground = document.getElementById('main').style.background;
       // already D4RK?
       if(currentBackground === "black"){
@@ -725,7 +830,7 @@
         document.getElementById('footer').style.background = "white";
         document.getElementById('sidebar').style.background = "white";
         document.getElementById('utxoTable').tHead.style.background = "none";
-
+        document.getElementById('thehtml').style.background = "white";
         //user prefers light mode;
         localStorage.setItem("theme", "light");
           //document.html.style.color = "white !important;"
@@ -797,6 +902,7 @@
         document.getElementById('header').style.background = "black";
         document.getElementById('footer').style.background = "black";
         document.getElementById('sidebar').style.background = "black";
+        document.getElementById('thehtml').style.background = "black";
 
         // make utxo table head dark
         document.getElementById("utxoTable").tHead.style.background = "black";
@@ -824,6 +930,7 @@
             cardicons[i].style.background = "black";
           }
           
+
         var navLinks = document.getElementsByClassName("nav-link");
           for (var i=0; i < navLinks.length; i++) {
             navLinks[i].style.background = "black";
@@ -885,6 +992,16 @@
           
           // make BCH price green again
           document.getElementById('bchprice').style.color = "#198754"; 
+
+          // color in fake buttons again
+          var buttonprimary = document.getElementsByClassName("button");
+          for (var i=0; i < buttonprimary.length; i++) {
+            buttonprimary[i].style.color = "black";
+          }
+
+          // color in mnemonic text box and derivation selector
+          document.getElementById("enterSeedphrase").style.color = "black";
+          document.getElementById("derivationPath").style.color = "black";
       }
     }
     
@@ -939,7 +1056,7 @@ function colorLinks(hex)
     }
     
 
-    // TODO: RUN THIS IF THE MODAL IS CLOSED IN ANY WAY. (Not just the "Close" button)
+    // RUN THIS IF THE MODAL IS CLOSED IN ANY WAY. (Not just the "Close" button)
     async function reloadBal() {
       console.log('Reload Balance (& UTXOs) func kicked off...');
 
@@ -953,69 +1070,26 @@ function colorLinks(hex)
       sendMax.checked = false;
 
       // Creates new/loads existing MAINNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
-      const wallet = await Wallet.named(userid);
+      const wallet = await Wallet.replaceNamed(userid, walletId);
+      // Get Wallet Balance
       wallet.balance = await wallet.getBalance();
-
-        // Display all balance info - BCH, USD & SATS
-        document.getElementById('bal').innerHTML = wallet.balance.bch + ' BCH';
-        document.getElementById('balusd').innerHTML = US.format(wallet.balance.usd);
-        document.getElementById('sats').innerHTML = US.format(wallet.balance.sat);
-
-      // After Balance Reload, also reload UTXOs
-      // Get all UTXOs for wallet. Use this to add UTXO selection to wallet. ** CREATE DATA TABLE WITH THIS INFO.
+      // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
       wallet.utxos = await wallet.getUtxos();
-      // DEBUG console.log('all wallet UTXOs = ' + JSON.stringify(wallet.utxos, null, 4));
-        console.log('RE-Hydrating UTXO Table...');
-        
-        //set utxo length
-        document.getElementById("utxoLen").innerHTML = US.format(wallet.utxos.length) + ' ';
-        
-         // Hydrate Datatable with UTXO data.
-        var tbody = document.getElementById('tbody');
-        // trying to clear the table first.
-        for(var i = 0;i<tbody.rows.length;){
-            tbody.deleteRow(i);
-        }
+      // Load the wallet
+      loadWallet(wallet);
 
-       // var tr1 = "";
-      //  tbody.innerHTML = tr1;
-        
-        for (var i = 0; i < wallet.utxos.length; i++) {
-          //  var tr = "<tr>";
-  
-            let confirmed = "Pending";
-            let bgclass = 'badge bg-warning';
-            let txid = wallet.utxos[i].txid;
-            let satoshis = wallet.utxos[i].satoshis;
-            let vout = wallet.utxos[i].vout;
-            let height = wallet.utxos[i].height;
-            if(height > 0){
-              confirmed = "Confirmed";
-              bgclass = 'badge bg-success';
-            }
-            
-            // Start of Each Row
-            var tr = "<tr><td><input class='coinsum' type='checkbox' value='" + satoshis +  "' name='" + txid + ":" + vout + "'></td>";                       
-            //Add in link for txid to block explorer... or to nodebox?
-            let txHashURL = '<a href="https://blockchair.com/bitcoin-cash/transaction/' + txid + '" target="_blank">' + txid + '</a>'
+        // TODO: Figure out why the utxo selection STOPS working after the reloadBal() function is run !!!
+        // Have to re-enable the utxo selection here?
 
-            // Create table rows for data
-            tr += "<td><span style='font-size=10pt;'>" + txHashURL + "</span></td><td>" + US.format(satoshis) + "</td><td>" + US.format(height) + "</td><td class='" + bgclass  + "'>" + confirmed + "</td></tr>";
-
-            // Must not forget the $ sign */
-            //tr += "<td>" + obj[i].key + "</td>" + "<td>$" + obj[i].value.toString() + "</td></tr>";
-
-            // We add the table row to the table body */
-            tbody.innerHTML += tr;
-        }
-
+        // Add utxo checkbox monitoring for calcuating send totals on the fly.
+       // watchUtxoCheckboxes(wallet);
 
     } // end reloadBal()
 
     function getNewDepositAddr() {
       // TODO: add this funcitonality when mainnet.js can scan/use other addresses for funds. Right now it's only the one address that you can (EASILY) send/recieve on.
     }
-          // ADD NOTIFICATION'
+          // Create a NEW NOTIFICATION for any incoming transactions
           let notifLength2 = 0;
     function createNotif(txHash) {
 
@@ -1044,6 +1118,7 @@ function colorLinks(hex)
       let text = document.getElementById('cashaddr').innerText;
       console.log('text to copy is... ' + text);
       navigator.clipboard.writeText(text.trim());
+      alert('The Deposit address was copied to clipboard.');
     }
     
 
@@ -1270,9 +1345,9 @@ function colorLinks(hex)
     try {
       let text = document.getElementById('cashaddr').innerText;
       await navigator.clipboard.writeText(text);
-      console.log('Bitcoin Cash address copied to clipboard');
+      console.log('Bitcoin Cash address has been copied to clipboard');
     } catch (err) {
-      console.error('Failed to copy: ', err);
+      console.error('Failed to copy BCH address: ', err);
     }
   }
 
@@ -1287,6 +1362,7 @@ function colorLinks(hex)
   </script>
 
   <script type="text/javascript">
+    // TODO: KICK OFF FUNCTION ONLY AFTER UTXOs are HYDRATED, MOVE THIS TO THE NORMAL JS SECTION AND DONT USE JQUERY ***
     $(document).ready(function(){
       //jQuery
       // Intantiate utxo DataTable after 3 seconds to allow proper UTXO hydration
@@ -1353,58 +1429,8 @@ function colorLinks(hex)
             <li>
               <hr class="dropdown-divider">
             </li>
-
-          
-<!--
-   <li class="notification-item"> <i class="bi bi-exclamation-circle text-warning"></i><div> <h4>Lorem Ipsum</h4> <p>Quae dolorem earum veritatis oditseno</p> <p>30 min. ago</p> </div> </li> <li> <hr class="dropdown-divider"> </li>
-
-            <li class="notification-item">
-              <i class="bi bi-x-circle text-danger"></i>
-              <div>
-                <h4>Atque rerum nesciunt</h4>
-                <p>Quae dolorem earum veritatis oditseno</p>
-                <p>1 hr. ago</p>
-              </div>
-            </li>
-
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-
-            <li class="notification-item">
-              <i class="bi bi-check-circle text-success"></i>
-              <div>
-                <h4>Sit rerum fuga</h4>
-                <p>Quae dolorem earum veritatis oditseno</p>
-                <p>2 hrs. ago</p>
-              </div>
-            </li>
-
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-
-            <li class="notification-item">
-              <i class="bi bi-info-circle text-primary"></i>
-              <div>
-                <h4>Dicta reprehenderit</h4>
-                <p>Quae dolorem earum veritatis oditseno</p>
-                <p>4 hrs. ago</p>
-              </div>
-            </li>
-
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-            <li class="dropdown-footer">
-              <a href="#">Show all notifications</a>
-            </li>
---> 
           </ul><!-- End Notification Dropdown Items -->
-
         </li><!-- End Notification Nav -->
-
-        
 
         <li class="nav-item dropdown pe-3">
 
@@ -1498,12 +1524,7 @@ function colorLinks(hex)
         </a>
       </li>
       
-      <li class="nav-item">
-        <a class="nav-link collapsed" onclick="window.print()" >
-          <i class="bi bi-printer-fill"></i>
-          <span>Print this Page</span>
-        </a>
-      </li>
+
       
       <li class="nav-item">
         <a class="nav-link collapsed" onClick="faq()" >
@@ -1536,6 +1557,13 @@ function colorLinks(hex)
           <span>Paper BCH Wallet</span>
         </a>
       </li>
+
+      <li class="nav-item">
+        <a class="nav-link collapsed" onclick="window.print()" >
+          <i class="bi bi-printer-fill"></i>
+          <span>Print this Page</span>
+        </a>
+      </li>
 </div>
       <!-- End F.A.Q Page Nav -->
 
@@ -1543,8 +1571,35 @@ function colorLinks(hex)
 
   </aside><!-- End Sidebar-->
 
-  <main id="main" class="main">
 
+
+  <main id="main" class="main" >
+
+<!-- if "isnew" = true this container will be displayed -->
+    <div class="container">
+      <img id="beaneater" src="assets/img/beaneater.gif" style="opacity:0.6;margin-left:2em;margin-top:2em" />
+      <div id="newwalletview" class="hide">
+        <fieldset style="margin-top: 25px;">
+            <h4><i style="transform: rotate(-0.05turn);" class="bi bi-currency-bitcoin"></i> Create new wallet</h4>
+            <input class="button primary" type="button" value="Create" onclick="createNewWallet()">
+            <br><br>
+            <hr>
+            <br>
+            <h4><i style="transform: rotate(-0.05turn);" class="bi bi-currency-bitcoin"></i> Import existing wallet</h4> 
+            <div>Enter mnemonic seed phrase</div>
+            <textarea style="resize: none;width:100%" id="enterSeedphrase" rows="3" placeholder="word1 word2 ..."></textarea>
+            <span>Derivation path: </span>
+            <select name="derivationPath" id="derivationPath"> <!-- onchange="selectDerivation(event)" -->
+              <option value="m/44'/145'/0'/0/0">m/44’/145’/0’/0/0 (standard HD wallet)</option>
+              <option value="m/44'/0'/0'/0/0">m/44'/0'/0'/0/0 (bitcoin.com wallet)</option>
+            </select> <br>
+            <input class="button primary" type="button" style="margin-top:15px" value="Import" onclick="importWallet()">
+            <br><br>
+        </fieldset>
+      </div>
+    </div>
+
+<div id="walletexists" class="hide">
     <div class="pagetitle">
       <h1>Wallet Dashboard</h1>
       <nav>
@@ -1587,7 +1642,7 @@ function colorLinks(hex)
 
                 <noscript>
                   <div style="color:red">
-                    *This site requires JavaScript. Please enable JavaScript in your browser to create a new Bitcoin Cash wallet.
+                    * This website requires JavaScript to function properly. Please enable JavaScript in your browser to create a new Bitcoin Cash wallet. If you don't want to use JavaScript, check out the <a href="https://electroncash.org" target="_blank">Electron Cash</a> Desktop/Mobile wallet.
                   <br /><br />
                   </div>
                 </noscript>
@@ -1744,8 +1799,15 @@ function colorLinks(hex)
                             <button type="button" class="btn-close" onClick="reloadBal()" data-bs-dismiss="modal" aria-label="Close"></button>
                           </div>
                           <div id="txdetectbody" class="modal-body">
-                            A new Transaction ID / Hash has been detected for your Deposit Address - <span id="cashaddr2"></span>.  The TX Hash is <span id="txhash">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>.
+                            A new incoming transaction has been detected for your Deposit Address - <span id="cashaddr2"></span>.  The TX Hash is <span id="txhash">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>.<br /><br />
+
+                            <span id="txouts"></span>
+                          
+  
+                          
                           </div>
+
+
                           <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onClick="reloadBal()">Close</button>
                             <!-- <button type="button" class="btn btn-primary">Okay</button> -->
@@ -1782,7 +1844,7 @@ function colorLinks(hex)
                               </h2>
                               <div id="faqsOne-1" class="accordion-collapse collapse" data-bs-parent="#faq-group-1" style="">
                                 <div class="accordion-body">
-                                  BCH Admin is a non-custodial & serverless Bitcoin Cash Web Wallet. Private keys are safely stored within your browser. To learn more about how the Bitcoin Cash wallet is created and persisted, visit <a href="https://mainnet.cash" target="_blank">Mainnet.cash</a>. The BCH wallet created and persisted is local to the [ browser / device / domain ] that is used. This means if you use a different device, browser or domain, then a different wallet will be created. Be sure to back up your Mnemonic Seed Phrase and Derivation Path so that you can restore your BCH on any other Bitcoin Cash wallet. 
+                                  BCH Admin is a non-custodial & serverless Bitcoin Cash Web Wallet. Private keys are safely stored within your browser. To learn more about how the Bitcoin Cash wallet is created and persisted, visit <a href="https://mainnet.cash/tutorial" target="_blank">Mainnet.cash</a>. The BCH wallet created and persisted is local to the [ browser / device / domain ] that is used. This means if you use a different device, browser or domain, then a different wallet will be created. Be sure to back up your <a href="https://learnmeabitcoin.com/technical/keys/hd-wallets/mnemonic-seed/" target="_blank">Mnemonic Seed Phrase</a> and <a href="https://learnmeabitcoin.com/technical/keys/hd-wallets/derivation-paths/" target="_blank">Derivation Path</a> so that you can restore your BCH on any other Bitcoin Cash wallet. 
                                 </div>
                               </div>
                             </div>
@@ -1808,7 +1870,7 @@ function colorLinks(hex)
                               </h2>
                               <div id="faqsOne-3" class="accordion-collapse collapse" data-bs-parent="#faq-group-1">
                                 <div class="accordion-body">
-                                  <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">The BCH Admin code is open source so you can verify what the code is doing</a>. The website itself is serverless (zero backend code) and only uses HTML, CSS & <i>clearly written, albeit a bit sloppy,</i> client-side JavaScript: utilizing the<a href="https://mainnet.cash" target="_blank">mainnet-js library/scripts</a> to interact with the Bitcoin Cash blockchain and store the private keys within the Browser's IndexDB Storage. There is no malicious code that I am aware of within the index.html, or included JavaScript assets. Everyone is welcome to review the source code to confirm that. <br /><br />BCH Admin uses an SSL certificate to encrypt communications on the website and mainnetjs essentially opens a websocket to a Bitcoin Cash node within your browser (whereas Electron Cash does this within the electron desktop application). You can also easily download the source code and host the wallet locally. The code still reaches out to third party nodes to verify tx data and broadcast transactions. The private keys used to sign transactions do not ever leave your browser's local storage and are not saved anywhere else. 
+                                  <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">The BCH Admin code is open source so you can verify what the code is doing</a>. The website itself is serverless (zero backend code) and only uses HTML, CSS & <i>clearly written, albeit a bit sloppy,</i> client-side JavaScript: utilizing the <a href="https://mainnet.cash" target="_blank">mainnet-js library/scripts</a> to interact with the Bitcoin Cash blockchain and store the private keys within the Browser's IndexDB Storage. There is no malicious code that I am aware of within the index.html, or included JavaScript assets. Everyone is welcome to review the source code to confirm that. <br /><br />BCH Admin uses an SSL certificate to encrypt communications on the website and mainnetjs essentially opens a websocket to a Bitcoin Cash node within your browser (whereas Electron Cash does this within the electron desktop application). You can also easily download the source code and host the wallet locally. The code still reaches out to third party nodes to verify tx data and broadcast transactions. The private keys used to sign transactions do not ever leave your browser's local storage and are not saved anywhere else. 
                                   <br /><br />
                                   * Please note that this software is offered AS IS with NO GAURANTEE that your funds will be safe. WE (https://KeepBitcoinFree.org) DOES NOT EVER HOLD YOUR PRIVATE KEYS; WE CANNOT, AND DO NOT WISH TO, STEAL YOUR Bitcoin Cash, BCH. This application is serverless, all keys are stored in your browser. Back up your seed phrase and derivation to restore your coins on any other Bitcoin Cash wallet.
                                 </div>
@@ -2159,7 +2221,7 @@ function colorLinks(hex)
 
       </div>
     </section>
-
+</div>
   </main><!-- End #main -->
 
   <!-- ======= Footer ======= -->

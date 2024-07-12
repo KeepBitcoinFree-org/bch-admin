@@ -1255,15 +1255,17 @@ width: 420px;
 
 @media (min-width: 992px) {
   .modal-content {
-  width:800px;
+  width:750px;
   }
 }
 
+/*
 @media (min-width: 800px) {
   .modal-content {
   width:500px;
   }
 }
+*/
 
 #send-error {
   color:red;
@@ -1341,4 +1343,12 @@ input:checked + .slider:before {
 #copytext
 {
     cursor: pointer;
+}
+
+.hide {
+  display:none;
+}
+
+.show {
+  display:block;
 }
