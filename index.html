@@ -52,9 +52,9 @@
 
 <!-- TODO: Generate DataTable and Setup Checkboxes only after wallet utxos have been hydrated. Right now it is just waiting 3-4 seconds for each to run. -->
 
-  <!-- CUSTOM SCRIPTS for BITCOIN CASH WALLET using MAINNET.CASH -->
-  <script src="assets/js/indexeddb-storage-2.3.0.js"></script>  
-  <script src="assets/js/mainnet-2.3.0.js"></script>
+  <!-- CUSTOM SCRIPTS for BITCOIN CASH WALLET using MAINNET.CASH *updated every quarter or so -->
+  <script src="assets/js/indexeddb-storage-2.3.13.js"></script>  
+  <script src="assets/js/mainnet-2.3.13.js"></script>
   
   <!-- Scripts for jQuery & DataTables -->
   <script src="assets/js/jquery-3.6.4.min.js"></script>
@@ -95,6 +95,8 @@
       // If the wallet exists, set the walletId
       if(walletExists){
 
+       try {
+
         // if yes, get/set the walletid in localStorage.
         let walletId = localStorage.getItem("walletId");
           if(!walletId || walletId === ''){
@@ -130,7 +132,10 @@
             loadWallet(wallet);
           }
 
-        
+      }catch(err){
+        console.log(err);
+        console.error(err);
+      } // end try/catch.
         
       }else{
         // Wallet does not exist, show newwalletview div.
@@ -2227,7 +2232,7 @@ function colorLinks(hex)
   <!-- ======= Footer ======= -->
   <footer id="footer" class="footer">
     <div class="copyright">
-      <strong><span><a href="https://KeepBitcoinFree.org" target="_blank">KeepBitcoinFree.org</a></span></strong> | <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">Fork me.</a> | <a href="https://mainnet.cash/tutorial" target="_blank">mainnet-2.2.5.js</a>
+      <strong><span><a href="https://KeepBitcoinFree.org" target="_blank">KeepBitcoinFree.org</a></span></strong> | <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">Fork me.</a> | <a href="https://mainnet.cash/tutorial" target="_blank">mainnet-2.3.13.js</a>
     </div>
   <!--  <div class="credits">
       null.
