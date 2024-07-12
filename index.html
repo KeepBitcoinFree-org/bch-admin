@@ -143,7 +143,85 @@
     }); // END CONTENT LOADED LISTENER
 
     // GENERAL CUSTOM FUNCTIONS
-    
+    function watchUtxoCheckboxes(wallet) {
+          if(wallet.utxos.length > 0) { 
+      //  function to watchUtxoCheckboxes & calculate the SendTotal {
+      setTimeout( function(){  
+      // console.log('watching utxo checkboxes...'); 
+          var inputs = document.getElementsByClassName('coinsum'),
+          total  = document.getElementById('send-total'),
+          totalUsd = document.getElementById('send-totalusd');
+          
+          // when sendmax checkbox is checked, select all coinsum inputs.
+          var inputMax = document.getElementById('sendmax');
+          inputMax.onchange = function() {
+
+
+            for (var i=0; i < inputs.length; i++) {
+              console.log('Input ' + i + '. input.checked = ' + inputs[i].checked);
+                        
+              if(inputMax.checked === true){
+                // first reset send-total to 0, in case user entered custom amounts.
+              // total.value = 0;
+              
+              // if it's not already selected, click the checkbox.
+                if(inputs[i].checked === false){
+                  inputs[i].click();
+                }
+              }else{
+                // inputMax was unselected.
+                // if it's IS already selected, click the checkbox to unselect.
+                if(inputs[i].checked === true){
+                  inputs[i].click();
+                }
+              }
+            } // END SENDMAX FOR
+          }
+          
+          //console.log('INPUTS.length = ' + inputs.length);
+                  
+          for (var i=0; i < inputs.length; i++) {
+            // Everytime one of the checkboxes are changed (clicked/unclicked) this funtion is run. 
+            // ISSUE: For some reason, after modal close and balance refresh function runs successfully, this no longer works to monitor input checkboxes.
+            // TODO: Test out methods of onclick or onchange or oninput. Right now this is nested inside of a timeout func.
+            inputs[i].onchange = function() {            
+                // Inputs changed, one was selected or de-selected. 
+                
+                // First reset send-total to 0, just in case the user entered a custom amount.
+                // Only do this if it's been selected, not  de-selected.
+              //  if(this.checked){
+              //   total.value = 0;
+              //  }
+                // Recaclulating totals
+                var checkedUtxosArray = new Array();
+                console.log('inputs have changed, caclulating coinsum totals ');
+                var add = this.value * (this.checked ? 1 : -1);
+                // Convert add (in satoshis) to BCH
+                add = (add / 100000000)
+                
+                //add.toFixed(8)
+                console.log('add = ' + add);
+                var totalValue = (parseFloat(total.value) + add).toFixed(8);
+              // send-total-amount.value = totalValue;
+                total.value = totalValue;
+                
+                //TODO: move bchPrice grab to here to always get latest price. Currently using price that was generated on page load.
+                var totalUsdVal = US.format(total.value * thebchPrice)
+                // Showing user the totals
+                totalUsd.innerHTML = totalUsdVal;
+                // Debug console log
+                console.log('total.value = '+ total.value);
+                    
+                // TODO: Create a separate array of TXIDs and add this info into the SEND FORM!!! *****
+                
+                
+              // var sendTxidList = document.getElementsByClassName('txidsum');
+              }
+            }
+          }, 5000);
+        } // end if wallet.uxtos.length > 0
+
+    } // end watchUtxoCheckboxes()
         // async function to create a new wallet
       async function createNewWallet() {
         
@@ -433,110 +511,20 @@
           // use PubKeys to get more Addrs
           // await Mainnet.getAddrsByXpubKey("tpubDDfazrbXYF84Xxq7XqnakjAwVyCFVUGEWrsuQY3VqzpV8QgH2X2cczoZbEAyMdRmcra4nLhf67vEZ1jSnQ2KKcq5USoTGtFGaVTsXx7XsG7","0/0",5)
 
-        } // END if(wallet){}
+  // FUNCTION TO WATCH UTXO CHECKBOXES AND RE-CALC TOTALS BASED ON INPUT CHANGES
+  watchUtxoCheckboxes(wallet);
 
-    } // End loadWallet(wallet)
-    
-    // Function to add event listener to SEND FORM for MANUAL bch amount changes - to then update the USD value being sent. This would allow the USD to track manual changes to send bal made by user.
-    // This is broken because it interferes with the current checkbox change refresh // Might come back to it.
-    //var sendTitleInput = document.getElementById('send-total');
-    //sendTitleInput.addEventListener("change", function(){
-      ////TODO: recalcuate the USD value and then set that.
-        //var totalUsd = document.getElementById('send-totalusd'),
-        //totalToSend = sendTitleInput.value,
-        //totalUsdVal = US.format(totalToSend * thebchPrice);
-        //// Showing user the totals
-        //totalUsd.innerHTML = totalUsdVal;
-        //// Debug console log
-        //console.log('total.value = '+ total.value);
-								
-      //});
+    } // END if(wallet){}
 
-    // FUNCTION TO WATCH UTXO CHECKBOXES AND RE-CALC TOTALS BASED ON INPUT CHANGES
- //  function calculateSendTotal() {
-  setTimeout( function(){  
-   // console.log('watching utxo checkboxes...'); 
-      var inputs = document.getElementsByClassName('coinsum'),
-      total  = document.getElementById('send-total'),
-      totalUsd = document.getElementById('send-totalusd');
-      
-      // when sendmax checkbox is checked, select all coinsum inputs.
-      var inputMax = document.getElementById('sendmax');
-      inputMax.onchange = function() {
+} // End loadWallet(wallet)
 
-
-        for (var i=0; i < inputs.length; i++) {
-          console.log('Input ' + i + '. input.checked = ' + inputs[i].checked);
-							      
-          if(inputMax.checked === true){
-            // first reset send-total to 0, in case user entered custom amounts.
-           // total.value = 0;
-          
-          // if it's not already selected, click the checkbox.
-            if(inputs[i].checked === false){
-              inputs[i].click();
-            }
-          }else{
-            // inputMax was unselected.
-            // if it's IS already selected, click the checkbox to unselect.
-            if(inputs[i].checked === true){
-              inputs[i].click();
-            }
-          }
-        } // END SENDMAX FOR
-      }
-      
-      //console.log('INPUTS.length = ' + inputs.length);
-							
-      for (var i=0; i < inputs.length; i++) {
-        // Everytime one of the checkboxes are changed (clicked/unclicked) this funtion is run. 
-        // ISSUE: For some reason, after modal close and balance refresh function runs successfully, this no longer works to monitor input checkboxes.
-        // TODO: Test out methods of onclick or onchange or oninput. Right now this is nested inside of a timeout func.
-        inputs[i].onchange = function() {            
-            // Inputs changed, one was selected or de-selected. 
-            
-            // First reset send-total to 0, just in case the user entered a custom amount.
-            // Only do this if it's been selected, not  de-selected.
-          //  if(this.checked){
-          //   total.value = 0;
-          //  }
-            // Recaclulating totals
-            var checkedUtxosArray = new Array();
-            console.log('inputs have changed, caclulating coinsum totals ');
-            var add = this.value * (this.checked ? 1 : -1);
-            // Convert add (in satoshis) to BCH
-            add = (add / 100000000)
-            
-            //add.toFixed(8)
-            console.log('add = ' + add);
-            var totalValue = (parseFloat(total.value) + add).toFixed(8);
-           // send-total-amount.value = totalValue;
-            total.value = totalValue;
-            
-            //TODO: move bchPrice grab to here to always get latest price. Currently using price that was generated on page load.
-            var totalUsdVal = US.format(total.value * thebchPrice)
-            // Showing user the totals
-            totalUsd.innerHTML = totalUsdVal;
-            // Debug console log
-            console.log('total.value = '+ total.value);
-								
-            // TODO: Create a separate array of TXIDs and add this info into the SEND FORM!!! *****
-            
-            
-           // var sendTxidList = document.getElementsByClassName('txidsum');
-          }
-        }
-      }, 5000);
-    
     // Function to allow user to Delete their bitcoincash wallet (and start anew). For some reason, it says it fails to delete, but it actually does delete it.
     // TODO: Should force a reload of the page after delete so user doesn't accidentally send coins to old wallet.
     function deleteWallet() {
 
       let databaseName = "bitcoincash";
-
-        // TODO: first warn user about deleting wallet & ask them to back up seed phrase.
         
-        if (confirm('Are you sure you want to DELETE THIS BITCOIN CASH WALLET? This cannot be undone. You will be prompted to create a new wallet, or restore an existing one. Make sure to save the Mnemonic seed phrase and Derivation first!')) {
+        if (confirm('Are you sure you want to DELETE THIS BITCOIN CASH WALLET? This cannot be undone. Once you confirm, the wallet will be reset and you will be prompted to create a new wallet, or restore an existing one. Make sure to save the Mnemonic Seed Phrase and Derivation Path first so you can restore it later!')) {
           // Save it!
           var req = indexedDB.deleteDatabase(databaseName);
           req.onsuccess = function () {
@@ -551,7 +539,8 @@
             };
           req.onblocked = function () {
               console.log("Couldn't delete database for BCH wallet due to the operation being blocked. It probably deleted it anyways though.");
-              alert("Couldn't delete database for BCH wallet due to the operation being blocked.");
+              // This error always comes up... but it does actually delete the wallet and reset everything.
+              //alert("Couldn't delete database for BCH wallet due to the operation being blocked.");
               location.reload(true);
             };
           
@@ -644,6 +633,8 @@
 
                 // Reset the BCH Send Form
                 resetSendBCHform();
+
+                //TODO: After send, run the reloadBal() 
                 
               }
 
@@ -1079,63 +1070,19 @@ function colorLinks(hex)
       sendMax.checked = false;
 
       // Creates new/loads existing MAINNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
-      const wallet = await Wallet.named(userid);
+      const wallet = await Wallet.replaceNamed(userid, walletId);
+      // Get Wallet Balance
       wallet.balance = await wallet.getBalance();
-
-        // Display all balance info - BCH, USD & SATS
-        document.getElementById('bal').innerHTML = wallet.balance.bch + ' BCH';
-        document.getElementById('balusd').innerHTML = US.format(wallet.balance.usd);
-        document.getElementById('sats').innerHTML = US.format(wallet.balance.sat);
-
-      // After Balance Reload, also reload UTXOs
-      // Get all UTXOs for wallet. Use this to add UTXO selection to wallet. ** CREATE DATA TABLE WITH THIS INFO.
+      // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
       wallet.utxos = await wallet.getUtxos();
-      // DEBUG console.log('all wallet UTXOs = ' + JSON.stringify(wallet.utxos, null, 4));
-        console.log('RE-Hydrating UTXO Table...');
-        
-        //set utxo length
-        document.getElementById("utxoLen").innerHTML = US.format(wallet.utxos.length) + ' ';
-        
-         // Hydrate Datatable with UTXO data.
-        var tbody = document.getElementById('tbody');
-        // trying to clear the table first.
-        for(var i = 0;i<tbody.rows.length;){
-            tbody.deleteRow(i);
-        }
-
-       // var tr1 = "";
-      //  tbody.innerHTML = tr1;
-        
-        for (var i = 0; i < wallet.utxos.length; i++) {
-          //  var tr = "<tr>";
-  
-            let confirmed = "Pending";
-            let bgclass = 'badge bg-warning';
-            let txid = wallet.utxos[i].txid;
-            let satoshis = wallet.utxos[i].satoshis;
-            let vout = wallet.utxos[i].vout;
-            let height = wallet.utxos[i].height;
-            if(height > 0){
-              confirmed = "Confirmed";
-              bgclass = 'badge bg-success';
-            }
-            
-            // Start of Each Row
-            var tr = "<tr><td><input class='coinsum' type='checkbox' value='" + satoshis +  "' name='" + txid + ":" + vout + "'></td>";                       
-            //Add in link for txid to block explorer... or to nodebox?
-            let txHashURL = '<a href="https://blockchair.com/bitcoin-cash/transaction/' + txid + '" target="_blank">' + txid + '</a>'
-
-            // Create table rows for data
-            tr += "<td><span style='font-size=10pt;'>" + txHashURL + "</span></td><td>" + US.format(satoshis) + "</td><td>" + US.format(height) + "</td><td class='" + bgclass  + "'>" + confirmed + "</td></tr>";
-
-            // Must not forget the $ sign */
-            //tr += "<td>" + obj[i].key + "</td>" + "<td>$" + obj[i].value.toString() + "</td></tr>";
-
-            // We add the table row to the table body */
-            tbody.innerHTML += tr;
-        }
+      // Load the wallet
+      loadWallet(wallet);
 
         // TODO: Figure out why the utxo selection STOPS working after the reloadBal() function is run !!!
+        // Have to re-enable the utxo selection here?
+
+        // Add utxo checkbox monitoring for calcuating send totals on the fly.
+       // watchUtxoCheckboxes(wallet);
 
     } // end reloadBal()
 
