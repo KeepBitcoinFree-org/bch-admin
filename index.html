@@ -24,7 +24,8 @@
   <link href="assets/vendor/box-icons/boxicons.min.css" rel="stylesheet"> 
   <link href="assets/vendor/remix-icons/remixicon.css" rel="stylesheet"> 
 
-  <link href="assets/css/jquery.dataTables.min.css" rel="stylesheet">
+  <!--
+  <link href="assets/css/jquery.dataTables.min.css" rel="stylesheet"> -->
 
 
   <!-- Main CSS File -->
@@ -56,14 +57,14 @@
   <script src="assets/js/indexeddb-storage-2.3.13.js"></script>  
   <script src="assets/js/mainnet-2.3.13.js"></script>
   
-  <!-- Scripts for jQuery & DataTables -->
+  <!-- Scripts for jQuery & DataTables 
   <script src="assets/js/jquery-3.6.4.min.js"></script>
-  <script src="assets/js/jquery.dataTables.min.js"></script>
+  <script src="assets/js/jquery.dataTables.min.js"></script> -->
 
-  <!-- Replacing DataTables-jQuery with Simple-Datatables 
+  <!-- Replacing DataTables-jQuery with Simple-Datatables -->
   <link href="assets/css/simple-datatables.css" rel="stylesheet">
   <script src="assets/js/simple-datatables.js"></script>
--->
+
 
 
   <!-- Custom Wallet Functionality JavaScript - written by Zatoshi - https://github.com/KeepBitcoinFree-org - utilizing the open source Mainnet.cash JS Library -->
@@ -105,7 +106,7 @@
 
         // if yes, get/set the walletid in localStorage.
         let walletId = localStorage.getItem("walletId");
-          if(!walletId || walletId === ''){
+          if(!walletId || walletId === ''){ // walletId is null OR walletId is empty / blank string
            //wallet exists BUT the walletId hasn't yet been set. That means it's an old wallet (using the default derivation)
            //Create the named wallet (with userid) and create/set the walletId in localStorage **This will preserve old/previously created wallets.
            const wallet = await Wallet.named(userid);
@@ -125,9 +126,18 @@
          // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
          wallet.utxos = await wallet.getUtxos();
          // Load the wallet
-          loadWallet(wallet);
+         // loadWallet(wallet);
+        loadWallet(wallet).then( function() {
+                    // Create DataTable.
+              //  setTimeout(function(){
+            const dataTable = new simpleDatatables.DataTable("#utxoTable", {
+                    searchable: true,
+                    fixedHeight: true,
+                });
+          // }, 2000);
+         });
 
-          }else{
+          }else{ // end walletId null check
             console.log('walletId is not blank, value = ' + walletId);
             const wallet = await Wallet.replaceNamed(userid, walletId);
             // Get Wallet Balance
@@ -135,7 +145,17 @@
             // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
             wallet.utxos = await wallet.getUtxos();
             // Load the wallet
-            loadWallet(wallet);
+           // loadWallet(wallet);
+            loadWallet(wallet).then( function() {
+                        // Create DataTable.
+                  //  setTimeout(function(){
+                const dataTable = new simpleDatatables.DataTable("#utxoTable", {
+                        searchable: true,
+                        fixedHeight: true,
+                    });
+              // }, 2000);
+            });
+
           }
 
       }catch(err){
@@ -233,6 +253,7 @@
         } // end if wallet.uxtos.length > 0
 
     } // end watchUtxoCheckboxes()
+
         // async function to create a new wallet
       async function createNewWallet() {
         
@@ -261,7 +282,15 @@
         wallet.utxos = await wallet.getUtxos();
 
         // Load the wallet
-        loadWallet(wallet);
+        loadWallet(wallet).then( function() {
+                    // Create DataTable.
+              //  setTimeout(function(){
+            const dataTable = new simpleDatatables.DataTable("#utxoTable", {
+                    searchable: true,
+                    fixedHeight: true,
+                });
+          // }, 2000);
+         });
       }
         
 
@@ -285,7 +314,15 @@
         // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
         wallet.utxos = await wallet.getUtxos();
         // Load the wallet
-        loadWallet(wallet);
+        loadWallet(wallet).then( function() {
+                    // Create DataTable.
+              //  setTimeout(function(){
+            const dataTable = new simpleDatatables.DataTable("#utxoTable", {
+                    searchable: true,
+                    fixedHeight: true,
+                });
+          // }, 2000);
+         });
         }
 
         // function to load the wallet
@@ -374,6 +411,7 @@
             // We add the table row to the table body */
             tbody.innerHTML += tr;
         } // END DataTable UTXO HYDRATION
+
 
 
         // TODO: Create separate page for Point of Sale (PoS) system/functionality. Then use the below to essentially pause everything to wait for
@@ -524,8 +562,22 @@
 
   // FUNCTION TO WATCH UTXO CHECKBOXES AND RE-CALC TOTALS BASED ON INPUT CHANGES
   watchUtxoCheckboxes(wallet);
+  
+
+      // create dataTable
+ //   let dataTable = new DataTable("#utxoTable"); 
+                    // Create DataTable.
+              //  setTimeout(function(){
+            //    const dataTable = new simpleDatatables.DataTable("#utxoTable", {
+             //       searchable: true,
+             //       fixedHeight: true,
+             //   });
+          // }, 2000);
+       //  });
 
     } // END if(wallet){}
+
+
 
 } // End loadWallet(wallet)
 
@@ -1370,19 +1422,22 @@ function colorLinks(hex)
     //})
 // }
 
+
+
+
   </script>
 
   <script type="text/javascript">
     // TODO: KICK OFF FUNCTION ONLY AFTER UTXOs are HYDRATED, MOVE THIS TO THE NORMAL JS SECTION AND DONT USE JQUERY ***
-    $(document).ready(function(){
+  //  $(document).ready(function(){
       //jQuery
       // Intantiate utxo DataTable after 3 seconds to allow proper UTXO hydration
-      setTimeout(function(){
-        let table = new DataTable('#utxoTable');
-        $(".dataTables_empty").css("display", "none");
-      }, 2000);
+   //   setTimeout(function(){
+    //    let table = new DataTable('#utxoTable');
+     //   $(".dataTables_empty").css("display", "none");
+     // }, 2000);
 
-    });
+    // });
 
 
   </script>
