@@ -33,38 +33,30 @@
 
 <!--
   * ========================================
-  * BCH Admin was created by KeepBitcoinFree.org as a personal project in 2023.
-  * It uses the mainnet-js library & all libraries are hosted locally to the app. Learn more about https://mainnet.cash
+  * BCH Admin was created by KeepBitcoinFree.org as a personal project in 2023. Big thanks to mainnet.cash.
+  * This project uses the mainnet-js library & all JS files/libraries are hosted locally to the app. Learn more about https://mainnet.cash
   * The wallet is serverless and uses vanilla client-side JavaScript. All Private Keys are created and stored locally in the browser's IndexedDB Storage.
   * The source code consists of the HTML page and other assets: css & javascript files, hosted locally. These files can be downloaded and run locally; only an internet connection and a browser capable of running JavaScript is required to create a new wallet, send/recieve BCH, or sign/verify a message.
   *
   * For now 1 cookie/browser/website (combo) = one user/wallet. Keys are stored within the indexedDB in the local user's browser and local to that device, browser & website.
   *
   * Using a private session will create a new wallet each time the website is opened.
-  * TODO: *Maybe* add ability to create user & log-in so the user could create multiple wallets for each user.
-  * DONE: Added functionality to print the webpage as a PAPER WALLET. Also link to paper.keepbitcoinfree.org for an official BCH paper wallet.
-  * TODO: Add functionality to restore a wallet from seed *En progress.
-  * TODO: Add functionality for PointOfSale system. Use the xpub key to display a screen that has a new address for each order. Watch that address while open, and generate success modal/page etc.
-  * - From the xPub, we generate addresses starting from the first address in the sequence, and a new address from the next one in the sequence for every new order, using the BIP44 derivation path.
+  * O TODO: *Maybe* add ability to create user & log-in so the user could create multiple wallets for each user.
+  * X DONE: Added functionality to print the webpage as a PAPER WALLET. Also link to paper.keepbitcoinfree.org for an official BCH paper wallet.
+  * X DONE: Add functionality to restore a wallet from seed *En progress.
+  * O TODO: Add functionality for PointOfSale system. Use the xpub key to display a screen that has a new address for each order. Watch that address while open, and generate success modal/page etc.
+  *   - From the xPub, we generate addresses starting from the first address in the sequence, and a new address from the next one in the sequence for every new order, using the BIP44 derivation path.
   * =======================================
 -->
-
-
-
-<!-- TODO: Generate DataTable and Setup Checkboxes only after wallet utxos have been hydrated. Right now it is just waiting 3-4 seconds for each to run. -->
 
   <!-- CUSTOM SCRIPTS for BITCOIN CASH WALLET using MAINNET.CASH *updated every quarter or so -->
   <script src="assets/js/indexeddb-storage-2.3.13.js"></script>  
   <script src="assets/js/mainnet-2.3.13.js"></script>
-  
-  <!-- Scripts for jQuery & DataTables 
-  <script src="assets/js/jquery-3.6.4.min.js"></script>
-  <script src="assets/js/jquery.dataTables.min.js"></script> -->
 
-  <!-- Replacing DataTables-jQuery with Simple-Datatables -->
+  <!-- Scripts for DataTables using Simple-Datatables (VanillaJS instead of jquery) -->
   <link href="assets/css/simple-datatables.css" rel="stylesheet">
   <script src="assets/js/simple-datatables.js"></script>
-
+  <!-- https://fiduswriter.github.io/simple-datatables/documentation/Getting-Started#install -->
 
 
   <!-- Custom Wallet Functionality JavaScript - written by Zatoshi - https://github.com/KeepBitcoinFree-org - utilizing the open source Mainnet.cash JS Library -->
