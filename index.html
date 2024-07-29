@@ -1130,14 +1130,16 @@ function colorLinks(hex)
       wallet.balance = await wallet.getBalance();
       // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
       wallet.utxos = await wallet.getUtxos();
-      // Load the wallet
-      loadWallet(wallet);
-
-        // TODO: Figure out why the utxo selection STOPS working after the reloadBal() function is run !!!
-        // Have to re-enable the utxo selection here?
-
-        // Add utxo checkbox monitoring for calcuating send totals on the fly.
-       // watchUtxoCheckboxes(wallet);
+      // Load the wallet and refresh/re-create the datatables. TODO: confirm this doesn't break the datatables...
+      loadWallet(wallet).then( function() {
+                    // Create DataTable.
+              //  setTimeout(function(){
+            const dataTable = new simpleDatatables.DataTable("#utxoTable", {
+                    searchable: true,
+                    fixedHeight: true,
+                });
+          // }, 2000);
+         });
 
     } // end reloadBal()
 
