@@ -24,7 +24,8 @@
   <link href="assets/vendor/box-icons/boxicons.min.css" rel="stylesheet"> 
   <link href="assets/vendor/remix-icons/remixicon.css" rel="stylesheet"> 
 
-  <link href="assets/css/jquery.dataTables.min.css" rel="stylesheet">
+  <!--
+  <link href="assets/css/jquery.dataTables.min.css" rel="stylesheet"> -->
 
 
   <!-- Main CSS File -->
@@ -32,38 +33,30 @@
 
 <!--
   * ========================================
-  * BCH Admin was created by KeepBitcoinFree.org as a personal project in 2023.
-  * It uses the mainnet-js library & all libraries are hosted locally to the app. Learn more about https://mainnet.cash
+  * BCH Admin was created by KeepBitcoinFree.org as a personal project in 2023. Big thanks to mainnet.cash.
+  * This project uses the mainnet-js library & all JS files/libraries are hosted locally to the app. Learn more about https://mainnet.cash
   * The wallet is serverless and uses vanilla client-side JavaScript. All Private Keys are created and stored locally in the browser's IndexedDB Storage.
   * The source code consists of the HTML page and other assets: css & javascript files, hosted locally. These files can be downloaded and run locally; only an internet connection and a browser capable of running JavaScript is required to create a new wallet, send/recieve BCH, or sign/verify a message.
   *
   * For now 1 cookie/browser/website (combo) = one user/wallet. Keys are stored within the indexedDB in the local user's browser and local to that device, browser & website.
   *
   * Using a private session will create a new wallet each time the website is opened.
-  * TODO: *Maybe* add ability to create user & log-in so the user could create multiple wallets for each user.
-  * DONE: Added functionality to print the webpage as a PAPER WALLET. Also link to paper.keepbitcoinfree.org for an official BCH paper wallet.
-  * TODO: Add functionality to restore a wallet from seed *En progress.
-  * TODO: Add functionality for PointOfSale system. Use the xpub key to display a screen that has a new address for each order. Watch that address while open, and generate success modal/page etc.
-  * - From the xPub, we generate addresses starting from the first address in the sequence, and a new address from the next one in the sequence for every new order, using the BIP44 derivation path.
+  * O TODO: *Maybe* add ability to create user & log-in so the user could create multiple wallets for each user.
+  * X DONE: Added functionality to print the webpage as a PAPER WALLET. Also link to paper.keepbitcoinfree.org for an official BCH paper wallet.
+  * X DONE: Add functionality to restore a wallet from seed *En progress.
+  * O TODO: Add functionality for PointOfSale system. Use the xpub key to display a screen that has a new address for each order. Watch that address while open, and generate success modal/page etc.
+  *   - From the xPub, we generate addresses starting from the first address in the sequence, and a new address from the next one in the sequence for every new order, using the BIP44 derivation path.
   * =======================================
 -->
-
-
-
-<!-- TODO: Generate DataTable and Setup Checkboxes only after wallet utxos have been hydrated. Right now it is just waiting 3-4 seconds for each to run. -->
 
   <!-- CUSTOM SCRIPTS for BITCOIN CASH WALLET using MAINNET.CASH *updated every quarter or so -->
   <script src="assets/js/indexeddb-storage-2.3.13.js"></script>  
   <script src="assets/js/mainnet-2.3.13.js"></script>
-  
-  <!-- Scripts for jQuery & DataTables -->
-  <script src="assets/js/jquery-3.6.4.min.js"></script>
-  <script src="assets/js/jquery.dataTables.min.js"></script>
 
-  <!-- Replacing DataTables-jQuery with Simple-Datatables 
+  <!-- Scripts for DataTables using Simple-Datatables (VanillaJS instead of jquery) -->
   <link href="assets/css/simple-datatables.css" rel="stylesheet">
   <script src="assets/js/simple-datatables.js"></script>
--->
+  <!-- https://fiduswriter.github.io/simple-datatables/documentation/Getting-Started#install -->
 
 
   <!-- Custom Wallet Functionality JavaScript - written by Zatoshi - https://github.com/KeepBitcoinFree-org - utilizing the open source Mainnet.cash JS Library -->
@@ -105,7 +98,7 @@
 
         // if yes, get/set the walletid in localStorage.
         let walletId = localStorage.getItem("walletId");
-          if(!walletId || walletId === ''){
+          if(!walletId || walletId === ''){ // walletId is null OR walletId is empty / blank string
            //wallet exists BUT the walletId hasn't yet been set. That means it's an old wallet (using the default derivation)
            //Create the named wallet (with userid) and create/set the walletId in localStorage **This will preserve old/previously created wallets.
            const wallet = await Wallet.named(userid);
@@ -125,9 +118,18 @@
          // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
          wallet.utxos = await wallet.getUtxos();
          // Load the wallet
-          loadWallet(wallet);
+         // loadWallet(wallet);
+        loadWallet(wallet).then( function() {
+                    // Create DataTable.
+              //  setTimeout(function(){
+            const dataTable = new simpleDatatables.DataTable("#utxoTable", {
+                    searchable: true,
+                    fixedHeight: true,
+                });
+          // }, 2000);
+         });
 
-          }else{
+          }else{ // end walletId null check
             console.log('walletId is not blank, value = ' + walletId);
             const wallet = await Wallet.replaceNamed(userid, walletId);
             // Get Wallet Balance
@@ -135,7 +137,17 @@
             // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
             wallet.utxos = await wallet.getUtxos();
             // Load the wallet
-            loadWallet(wallet);
+           // loadWallet(wallet);
+            loadWallet(wallet).then( function() {
+                        // Create DataTable.
+                  //  setTimeout(function(){
+                const dataTable = new simpleDatatables.DataTable("#utxoTable", {
+                        searchable: true,
+                        fixedHeight: true,
+                    });
+              // }, 2000);
+            });
+
           }
 
       }catch(err){
@@ -233,6 +245,7 @@
         } // end if wallet.uxtos.length > 0
 
     } // end watchUtxoCheckboxes()
+
         // async function to create a new wallet
       async function createNewWallet() {
         
@@ -261,7 +274,15 @@
         wallet.utxos = await wallet.getUtxos();
 
         // Load the wallet
-        loadWallet(wallet);
+        loadWallet(wallet).then( function() {
+                    // Create DataTable.
+              //  setTimeout(function(){
+            const dataTable = new simpleDatatables.DataTable("#utxoTable", {
+                    searchable: true,
+                    fixedHeight: true,
+                });
+          // }, 2000);
+         });
       }
         
 
@@ -285,7 +306,15 @@
         // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
         wallet.utxos = await wallet.getUtxos();
         // Load the wallet
-        loadWallet(wallet);
+        loadWallet(wallet).then( function() {
+                    // Create DataTable.
+              //  setTimeout(function(){
+            const dataTable = new simpleDatatables.DataTable("#utxoTable", {
+                    searchable: true,
+                    fixedHeight: true,
+                });
+          // }, 2000);
+         });
         }
 
         // function to load the wallet
@@ -374,6 +403,7 @@
             // We add the table row to the table body */
             tbody.innerHTML += tr;
         } // END DataTable UTXO HYDRATION
+
 
 
         // TODO: Create separate page for Point of Sale (PoS) system/functionality. Then use the below to essentially pause everything to wait for
@@ -524,8 +554,22 @@
 
   // FUNCTION TO WATCH UTXO CHECKBOXES AND RE-CALC TOTALS BASED ON INPUT CHANGES
   watchUtxoCheckboxes(wallet);
+  
+
+      // create dataTable
+ //   let dataTable = new DataTable("#utxoTable"); 
+                    // Create DataTable.
+              //  setTimeout(function(){
+            //    const dataTable = new simpleDatatables.DataTable("#utxoTable", {
+             //       searchable: true,
+             //       fixedHeight: true,
+             //   });
+          // }, 2000);
+       //  });
 
     } // END if(wallet){}
+
+
 
 } // End loadWallet(wallet)
 
@@ -1086,14 +1130,16 @@ function colorLinks(hex)
       wallet.balance = await wallet.getBalance();
       // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
       wallet.utxos = await wallet.getUtxos();
-      // Load the wallet
-      loadWallet(wallet);
-
-        // TODO: Figure out why the utxo selection STOPS working after the reloadBal() function is run !!!
-        // Have to re-enable the utxo selection here?
-
-        // Add utxo checkbox monitoring for calcuating send totals on the fly.
-       // watchUtxoCheckboxes(wallet);
+      // Load the wallet and refresh/re-create the datatables. TODO: confirm this doesn't break the datatables...
+      loadWallet(wallet).then( function() {
+                    // Create DataTable.
+              //  setTimeout(function(){
+            const dataTable = new simpleDatatables.DataTable("#utxoTable", {
+                    searchable: true,
+                    fixedHeight: true,
+                });
+          // }, 2000);
+         });
 
     } // end reloadBal()
 
@@ -1370,19 +1416,22 @@ function colorLinks(hex)
     //})
 // }
 
+
+
+
   </script>
 
   <script type="text/javascript">
     // TODO: KICK OFF FUNCTION ONLY AFTER UTXOs are HYDRATED, MOVE THIS TO THE NORMAL JS SECTION AND DONT USE JQUERY ***
-    $(document).ready(function(){
+  //  $(document).ready(function(){
       //jQuery
       // Intantiate utxo DataTable after 3 seconds to allow proper UTXO hydration
-      setTimeout(function(){
-        let table = new DataTable('#utxoTable');
-        $(".dataTables_empty").css("display", "none");
-      }, 2000);
+   //   setTimeout(function(){
+    //    let table = new DataTable('#utxoTable');
+     //   $(".dataTables_empty").css("display", "none");
+     // }, 2000);
 
-    });
+    // });
 
 
   </script>
@@ -1535,7 +1584,12 @@ function colorLinks(hex)
         </a>
       </li>
       
-
+      <li class="nav-item">
+        <a class="nav-link collapsed" onclick="window.print()" >
+          <i class="bi bi-printer-fill"></i>
+          <span>Print this Page</span>
+        </a>
+      </li>
       
       <li class="nav-item">
         <a class="nav-link collapsed" onClick="faq()" >
@@ -1569,12 +1623,6 @@ function colorLinks(hex)
         </a>
       </li>
 
-      <li class="nav-item">
-        <a class="nav-link collapsed" onclick="window.print()" >
-          <i class="bi bi-printer-fill"></i>
-          <span>Print this Page</span>
-        </a>
-      </li>
 </div>
       <!-- End F.A.Q Page Nav -->
 
@@ -1753,7 +1801,7 @@ function colorLinks(hex)
             
             
             <!-- Deposit Address Card -->
-            <div class="col-xxl-8 col-xl-12">
+            <div class="col-xxl-12 col-xl-12">
 
               <div class="card info-card customers-card" >
 
@@ -1954,7 +2002,7 @@ function colorLinks(hex)
 
             
              <!-- SEND BCH Card -->
-            <div id="send" class="col-xxl-8 col-xl-12">
+            <div id="send" class="col-xxl-12 col-xl-12">
 
               <div id="sendBCHcard" class="card info-card customers-card">
 
@@ -2053,9 +2101,6 @@ function colorLinks(hex)
                           // disable utxo checkboxes.
                           input.disabled = true;
                         };
-
-                        
-                        
                         
                         // start calcUsd
                        sendTotal.addEventListener('input', function calcUsd() {
@@ -2163,7 +2208,7 @@ function colorLinks(hex)
 
 
           <!-- Start SIGN / VERIFY MESSAGE CARD -->
-          <div class="col-xxl-12 col-xl-12">
+          <div class="col-xxl-12 col-md-12">
              <div id="signverify" class="card info-card customers-card">
 
                <div class="filter">
@@ -2190,7 +2235,7 @@ function colorLinks(hex)
                       <form id="signverifyform" class="row g-3">
                       <div class="col-md-12">
                         <div class="form-floating">
-                        <input type="text" class="form-control" name="signverifymessage" id="signverifymessage" size="100%" required>
+                        <input type="text" class="form-control" name="signverifymessage" id="signverifymessage" size="100%" width="100%" required>
                          <label for="signverifymessage">Message to Sign or Verify</label> 
                             <div id="signverifymsgerror" style="display:none;" class="invalid-feedback">
                               Please enter a message to sign or verify.
