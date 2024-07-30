@@ -1801,7 +1801,7 @@ function colorLinks(hex)
             
             
             <!-- Deposit Address Card -->
-            <div class="col-xxl-8 col-xl-12">
+            <div class="col-xxl-12 col-xl-12">
 
               <div class="card info-card customers-card" >
 
@@ -2002,7 +2002,7 @@ function colorLinks(hex)
 
             
              <!-- SEND BCH Card -->
-            <div id="send" class="col-xxl-8 col-xl-12">
+            <div id="send" class="col-xxl-12 col-xl-12">
 
               <div id="sendBCHcard" class="card info-card customers-card">
 
@@ -2101,9 +2101,6 @@ function colorLinks(hex)
                           // disable utxo checkboxes.
                           input.disabled = true;
                         };
-
-                        
-                        
                         
                         // start calcUsd
                        sendTotal.addEventListener('input', function calcUsd() {
@@ -2211,7 +2208,7 @@ function colorLinks(hex)
 
 
           <!-- Start SIGN / VERIFY MESSAGE CARD -->
-          <div class="col-xxl-12 col-xl-12">
+          <div class="col-xxl-12 col-md-12">
              <div id="signverify" class="card info-card customers-card">
 
                <div class="filter">
@@ -2238,7 +2235,7 @@ function colorLinks(hex)
                       <form id="signverifyform" class="row g-3">
                       <div class="col-md-12">
                         <div class="form-floating">
-                        <input type="text" class="form-control" name="signverifymessage" id="signverifymessage" size="100%" required>
+                        <input type="text" class="form-control" name="signverifymessage" id="signverifymessage" size="100%" width="100%" required>
                          <label for="signverifymessage">Message to Sign or Verify</label> 
                             <div id="signverifymsgerror" style="display:none;" class="invalid-feedback">
                               Please enter a message to sign or verify.
