@@ -1637,6 +1637,7 @@ function colorLinks(hex)
 <!-- if "isnew" = true this container will be displayed -->
     <div class="container">
       <img id="beaneater" src="assets/img/beaneater.gif" style="opacity:0.6;margin-left:2em;margin-top:2em" />
+     
       <div id="newwalletview" class="hide">
         <fieldset style="margin-top: 25px;">
             <h4><i style="transform: rotate(-0.05turn);" class="bi bi-currency-bitcoin"></i> Create new wallet</h4>
@@ -1841,116 +1842,11 @@ function colorLinks(hex)
 
                   </p>
 
-                    <!-- Basic Modal style="display:none;" -->
-                    <button style="display:none;" id="modalbtn" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#utxoModal">
-                      Test Incoming Transaction
-                    </button>
-<!--
-                    <button style="display:none;" onClick="createNotif()" id="notificationbtn" type="button" class="btn btn-primary">
-                      Test Notification
-                    </button> -->
-                    
-                    <div class="modal fade" id="utxoModal" tabindex="-1" data-bs-backdrop="false">
-                      <div class="modal-dialog">
-                        <div class="modal-content" data-bs-backdrop="false">
-                          <div class="modal-header">
-                            <h5 id="txdetectheader" class="modal-title">New TXID Detected</h5>
-                            <button type="button" class="btn-close" onClick="reloadBal()" data-bs-dismiss="modal" aria-label="Close"></button>
-                          </div>
-                          <div id="txdetectbody" class="modal-body">
-                            A new transaction has been detected for your Deposit Address - <span id="cashaddr2"></span>.  The TX Hash is <span id="txhash">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>.<br /><br />
 
-                            <span id="txouts"></span>
-                          
-  
-                          
-                          </div>
-
-
-                          <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onClick="reloadBal()">Close</button>
-                            <!-- <button type="button" class="btn btn-primary">Okay</button> -->
-                          </div>
-                        </div>
-                      </div>
-                    </div><!-- End Basic Modal-->
-
-
-
-                    <!-- Basic Modal style="display:none;" -->
-                    <button style="display:none;" id="faqmodalbtn" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#FAQModal">
-                      Test FAQ Modal
-                    </button>
-                    
-                    <div class="modal fade" id="FAQModal" tabindex="-1">
-                      <div class="modal-dialog">
-                        <div class="modal-content">
-                          <div class="modal-header">
-                            <h5 class="modal-title">BCH Admin FAQ</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                          </div>
-                          <div class="modal-body">
-                          <div class="card-body" id="faq-modal">
-                          <h5 class="card-title">Frequently Asked Questions</h5>
-
-                          <div class="accordion accordion-flush" id="faq-group-1">
-
-                            <div class="accordion-item">
-                              <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" data-bs-target="#faqsOne-1" type="button" data-bs-toggle="collapse" aria-expanded="false">
-                                  What is BCH Admin?
-                                </button>
-                              </h2>
-                              <div id="faqsOne-1" class="accordion-collapse collapse" data-bs-parent="#faq-group-1" style="">
-                                <div class="accordion-body">
-                                  BCH Admin is a non-custodial & serverless Bitcoin Cash Web Wallet. Private keys are safely stored within your browser. To learn more about how the Bitcoin Cash wallet is created and persisted, visit <a href="https://mainnet.cash/tutorial" target="_blank">Mainnet.cash</a>. The BCH wallet created and persisted is local to the [ browser / device / domain ] that is used. This means if you use a different device, browser or domain, then a different wallet will be created. Be sure to back up your <a href="https://learnmeabitcoin.com/technical/keys/hd-wallets/mnemonic-seed/" target="_blank">Mnemonic Seed Phrase</a> and <a href="https://learnmeabitcoin.com/technical/keys/hd-wallets/derivation-paths/" target="_blank">Derivation Path</a> so that you can restore your BCH on any other Bitcoin Cash wallet. 
-                                </div>
-                              </div>
-                            </div>
-
-                            <div class="accordion-item">
-                              <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" data-bs-target="#faqsOne-2" type="button" data-bs-toggle="collapse" aria-expanded="false">
-                                  What is Bitcoin Cash?
-                                </button>
-                              </h2>
-                              <div id="faqsOne-2" class="accordion-collapse collapse" data-bs-parent="#faq-group-1">
-                                <div class="accordion-body">
-                                  <a href="https://bitcoincash.org" target="_blank">Bitcoin Cash</a> is a <a href="https://keepbitcoinfree.org/bitcoin.pdf" target="_blank">purely peer-to-peer version of electronic cash</a>, created in 2009 by <a href="https://satoshi.nakamotoinstitute.org" target="_blank">Satoshi Nakamoto</a>. Where the BTC fork has repeatedly failed to scale and act as a functional currency (high fees, slow confirmation times), Bitcoin Cash (BCH) has successfully scaled on-chain with larger blocks (32MB+), consistently low fees, and instant 0-conf transactions. Low fees and instant 0-conf transactions used to be features of BTC, but now only exist within BCH. <a href="https://whybitcoincash.com" target="_blank">Why Bitcoin Cash?</a>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div class="accordion-item">
-                              <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" data-bs-target="#faqsOne-3" type="button" data-bs-toggle="collapse" aria-expanded="false">
-                                  Is BCH Admin secure?
-                                </button>
-                              </h2>
-                              <div id="faqsOne-3" class="accordion-collapse collapse" data-bs-parent="#faq-group-1">
-                                <div class="accordion-body">
-                                  <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">The BCH Admin code is open source so you can verify what the code is doing</a>. The website itself is serverless (zero backend code) and only uses HTML, CSS & <i>clearly written, albeit a bit sloppy,</i> client-side JavaScript: utilizing the <a href="https://mainnet.cash" target="_blank">mainnet-js library/scripts</a> to interact with the Bitcoin Cash blockchain and store the private keys within the Browser's IndexDB Storage. There is no malicious code that I am aware of within the index.html, or included JavaScript assets. Everyone is welcome to review the source code to confirm that. <br /><br />BCH Admin uses an SSL certificate to encrypt communications on the website and mainnetjs essentially opens a websocket to a Bitcoin Cash node within your browser (whereas Electron Cash does this within the electron desktop application). You can also easily download the source code and host the wallet locally. The code still reaches out to third party nodes to verify tx data and broadcast transactions. The private keys used to sign transactions do not ever leave your browser's local storage and are not saved anywhere else. 
-                                  <br /><br />
-                                  * Please note that this software is offered AS IS with NO GAURANTEE that your funds will be safe. WE (https://KeepBitcoinFree.org) DOES NOT EVER HOLD YOUR PRIVATE KEYS; WE CANNOT, AND DO NOT WISH TO, STEAL YOUR Bitcoin Cash, BCH. This application is serverless, all keys are stored in your browser. Back up your seed phrase and derivation to restore your coins on any other Bitcoin Cash wallet.
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          </div>
-                          <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                            <!-- <button type="button" class="btn btn-primary">Okay</button> -->
-                          </div>
-                        </div>
-                      </div>
-                    </div><!-- End Basic Modal-->
-                    
-                    </div>
                   </div>
 
                 </div>
-              </div>  <!-- END MODALS ? -->
+              </div> 
 
             </div><!-- End Deposit Address Card -->
             
@@ -2278,6 +2174,117 @@ function colorLinks(hex)
       </div>
     </section>
 </div>
+
+<!-- MODALS -->
+                     <!-- Basic Modal style="display:none;" -->
+                     <button style="display:none;" id="modalbtn" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#utxoModal">
+                      Test Incoming Transaction
+                    </button>
+<!--
+                    <button style="display:none;" onClick="createNotif()" id="notificationbtn" type="button" class="btn btn-primary">
+                      Test Notification
+                    </button> -->
+                    
+                    <div class="modal fade" id="utxoModal" tabindex="-1" data-bs-backdrop="false">
+                      <div class="modal-dialog">
+                        <div class="modal-content" data-bs-backdrop="false">
+                          <div class="modal-header">
+                            <h5 id="txdetectheader" class="modal-title">New TXID Detected</h5>
+                            <button type="button" class="btn-close" onClick="reloadBal()" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div id="txdetectbody" class="modal-body">
+                            A new transaction has been detected for your Deposit Address - <span id="cashaddr2"></span>.  The TX Hash is <span id="txhash">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>.<br /><br />
+
+                            <span id="txouts"></span>
+                          
+  
+                          
+                          </div>
+
+
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onClick="reloadBal()">Close</button>
+                            <!-- <button type="button" class="btn btn-primary">Okay</button> -->
+                          </div>
+                        </div>
+                      </div>
+                    </div><!-- End Basic Modal-->
+
+
+
+                    <!-- Basic Modal button that is hidden. style="display:none;" --> 
+                    <button style="display:none;" id="faqmodalbtn" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#FAQModal">
+                      Test FAQ Modal
+                    </button> 
+                    
+                    <div class="modal fade" id="FAQModal" tabindex="-1">
+                      <div class="modal-dialog">
+                        <div class="modal-content">
+                          <div class="modal-header">
+                            <h5 class="modal-title">BCH Admin FAQ</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                          <div class="modal-body">
+                          <div class="card-body" id="faq-modal">
+                          <h5 class="card-title">Frequently Asked Questions</h5>
+
+                          <div class="accordion accordion-flush" id="faq-group-1">
+
+                            <div class="accordion-item">
+                              <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" data-bs-target="#faqsOne-1" type="button" data-bs-toggle="collapse" aria-expanded="false">
+                                  What is BCH Admin?
+                                </button>
+                              </h2>
+                              <div id="faqsOne-1" class="accordion-collapse collapse" data-bs-parent="#faq-group-1" style="">
+                                <div class="accordion-body">
+                                  BCH Admin is a non-custodial & serverless Bitcoin Cash Web Wallet. Private keys are safely stored within your browser. To learn more about how the Bitcoin Cash wallet is created and persisted, visit <a href="https://mainnet.cash/tutorial" target="_blank">Mainnet.cash</a>. The BCH wallet created and persisted is local to the [ browser / device / domain ] that is used. This means if you use a different device, browser or domain, then a different wallet will be created. Be sure to back up your <a href="https://learnmeabitcoin.com/technical/keys/hd-wallets/mnemonic-seed/" target="_blank">Mnemonic Seed Phrase</a> and <a href="https://learnmeabitcoin.com/technical/keys/hd-wallets/derivation-paths/" target="_blank">Derivation Path</a> so that you can restore your BCH on any other Bitcoin Cash wallet. 
+                                </div>
+                              </div>
+                            </div>
+
+                            <div class="accordion-item">
+                              <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" data-bs-target="#faqsOne-2" type="button" data-bs-toggle="collapse" aria-expanded="false">
+                                  What is Bitcoin Cash?
+                                </button>
+                              </h2>
+                              <div id="faqsOne-2" class="accordion-collapse collapse" data-bs-parent="#faq-group-1">
+                                <div class="accordion-body">
+                                  <a href="https://bitcoincash.org" target="_blank">Bitcoin Cash</a> is a <a href="https://keepbitcoinfree.org/bitcoin.pdf" target="_blank">purely peer-to-peer version of electronic cash</a>, created in 2009 by <a href="https://satoshi.nakamotoinstitute.org" target="_blank">Satoshi Nakamoto</a>. Where the BTC fork has repeatedly failed to scale and act as a functional currency (high fees, slow confirmation times), Bitcoin Cash (BCH) has successfully scaled on-chain with larger blocks (32MB+), consistently low fees, and instant 0-conf transactions. Low fees and instant 0-conf transactions used to be features of BTC, but now only exist within BCH. <a href="https://whybitcoincash.com" target="_blank">Why Bitcoin Cash?</a>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div class="accordion-item">
+                              <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" data-bs-target="#faqsOne-3" type="button" data-bs-toggle="collapse" aria-expanded="false">
+                                  Is BCH Admin secure?
+                                </button>
+                              </h2>
+                              <div id="faqsOne-3" class="accordion-collapse collapse" data-bs-parent="#faq-group-1">
+                                <div class="accordion-body">
+                                  <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">The BCH Admin code is open source so you can verify what the code is doing</a>. The website itself is serverless (zero backend code) and only uses HTML, CSS & <i>clearly written, albeit a bit sloppy,</i> client-side JavaScript: utilizing the <a href="https://mainnet.cash" target="_blank">mainnet-js library/scripts</a> to interact with the Bitcoin Cash blockchain and store the private keys within the Browser's IndexDB Storage. There is no malicious code that I am aware of within the index.html, or included JavaScript assets. Everyone is welcome to review the source code to confirm that. <br /><br />BCH Admin uses an SSL certificate to encrypt communications on the website and mainnetjs essentially opens a websocket to a Bitcoin Cash node within your browser (whereas Electron Cash does this within the electron desktop application). You can also easily download the source code and host the wallet locally. The code still reaches out to third party nodes to verify tx data and broadcast transactions. The private keys used to sign transactions do not ever leave your browser's local storage and are not saved anywhere else. 
+                                  <br /><br />
+                                  * Please note that this software is offered AS IS with NO GAURANTEE that your funds will be safe. WE (https://KeepBitcoinFree.org) DOES NOT EVER HOLD YOUR PRIVATE KEYS; WE CANNOT, AND DO NOT WISH TO, STEAL YOUR Bitcoin Cash, BCH. This application is serverless, all keys are stored in your browser. Back up your seed phrase and derivation to restore your coins on any other Bitcoin Cash wallet.
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <!-- <button type="button" class="btn btn-primary">Okay</button> -->
+                          </div>
+                        </div>
+                      </div>
+                    </div><!-- End Basic Modal-->
+                    
+                    </div>
+
+                    <!-- END MODAL-->
+
   </main><!-- End #main -->
 
   <!-- ======= Footer ======= -->
