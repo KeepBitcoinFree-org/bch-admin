@@ -13,7 +13,7 @@
   <link href="assets/img/bitcoin-cash-circle-icon-192.png" rel="icon">
   <link href="assets/img/bitcoin-cash-circle-icon-192.png" rel="apple-touch-icon">
 
-  <!-- Google Fonts TODO: Replace with included static/downloaded fonts -->
+  <!-- Google Fonts ***TODO: Replace with included static/downloaded fonts -->
   <link href="https://fonts.gstatic.com" rel="preconnect">
   <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
   <!--   <link href="assets/css/opensans.css" rel="stylesheet"> -->
@@ -30,6 +30,8 @@
 
   <!-- Main CSS File -->
   <link href="assets/css/style.css" rel="stylesheet">
+  <!-- Confetti CSS -->
+  <link href="assets/css/confetti.css" rel="stylesheet">
 
 <!--
   * ========================================
@@ -46,12 +48,14 @@
   * X DONE: Add functionality to restore a wallet from seed *En progress.
   * O TODO: Add functionality for PointOfSale system. Use the xpub key to display a screen that has a new address for each order. Watch that address while open, and generate success modal/page etc.
   *   - From the xPub, we generate addresses starting from the first address in the sequence, and a new address from the next one in the sequence for every new order, using the BIP44 derivation path.
+  * O TODO: Add WIP Private Key to have the ability to scan and import into other wallet/apps.
   * =======================================
 -->
 
-  <!-- CUSTOM SCRIPTS for BITCOIN CASH WALLET using MAINNET.CASH *updated every quarter or so -->
-  <script src="assets/js/indexeddb-storage-2.3.13.js"></script>  
-  <script src="assets/js/mainnet-2.3.13.js"></script>
+  <!-- CUSTOM SCRIPTS for BITCOIN CASH WALLET using MAINNET.CASH served locally *updated every 3 months or so -->
+  <script src="assets/js/indexeddb-storage-2.5.0.js"></script>  
+  <script src="assets/js/mainnet-2.5.0.js"></script>
+  <!-- old v 2.3.13.js -->
 
   <!-- Scripts for DataTables using Simple-Datatables (VanillaJS instead of jquery) -->
   <link href="assets/css/simple-datatables.css" rel="stylesheet">
@@ -84,6 +88,8 @@
       console.log('Date is... ' + date);
       console.log('userid = ' + userid);
 
+      // Create Reload Counter
+      // let reloadCounter = 0;
       // const userPrefersDark = false;
       // const walletExists = localStorage.getItem("isnew") === "false";
 
@@ -139,7 +145,7 @@
             // Load the wallet
            // loadWallet(wallet);
             loadWallet(wallet).then( function() {
-                        // Create DataTable.
+                // Create DataTable.
                   //  setTimeout(function(){
                 const dataTable = new simpleDatatables.DataTable("#utxoTable", {
                         searchable: true,
@@ -158,7 +164,7 @@
       }else{
         // Wallet does not exist, show newwalletview div.
         document.getElementById("newwalletview").classList.remove('hide');
-        // Hide the loader afterwards
+        // Hide the BTC eater loader afterwards
         document.getElementById("beaneater").classList.add('hide');
         //document.getElementById("newWalletView").style.display = "inline";
       }
@@ -284,8 +290,6 @@
           // }, 2000);
          });
       }
-        
-
 
      // function to import a wallet using a 12 word mnemonic seed phrase & derivation path.
      async function importWallet() {
@@ -317,20 +321,16 @@
          });
         }
 
-        // function to load the wallet
+    let reloadCounter = 0;
+
+    // function to load the wallet
     async function loadWallet(wallet) {
+        
         // Show the wallet details
         document.getElementById("walletexists").classList.remove('hide');
         // Hide the new wallet view
         document.getElementById("newwalletview").classList.add('hide');
         document.getElementById("beaneater").classList.add('hide');
-        // Check persistent theme dark/light mode from IndexedDB.
-        const userPrefersDark = localStorage.getItem("theme") === "dark";
-        
-        if(userPrefersDark){
-        // click the button to trigger d4rk mode if user Prefers D4rk
-          document.getElementById('darkmode').click();
-        }
         
         console.log('Mainnet BCH wallet has been created... ', wallet);
         localStorage.setItem("isnew", "false");
@@ -345,8 +345,10 @@
           console.log('Wallet IS using BIP39 Derivation path');
         }
         
-        // TODO: add functionality to allow user to restore from seed phrase, or WIF private key.
-        // const wallet = await Wallet.fromSeed("horse duck stapler...", "m/44'/1'/145'/0/0");
+        // Reset all BCH SEND / UTXO Inputs in case some are selected, etc.
+        resetSendBCHform();
+
+        //const wallet = await Wallet.fromSeed("horse duck stapler...", "m/44'/1'/145'/0/0");
         //const wallet = await Wallet.fromWIF('.....');
         // wallet.privateKeyWif
         // wallet.mnemonic
@@ -359,19 +361,42 @@
         document.getElementById("derivation1").innerHTML = derPath;
         
         // DEBUG console.log('all wallet UTXOs = ' + JSON.stringify(wallet.utxos, null, 4));
-        console.log('Hydrating UTXO Table...');
+        console.log('Hydrating UTXO Table...'); 
+
+        // TODO: ** GETTING AN ERROR RIGHT AROUND HERE DURING RELOADBAL() after receiving funds. This is because the tbody ID is being removed when the datatable is initially created. So because we are running this on an already loaded page, it's throwing an error. ***
         
         //set utxo length
         document.getElementById("utxoLen").innerHTML = US.format(wallet.utxos.length) + ' ';
         
         // Fill in Datatable with UTXO hydration.
-        var tbody = document.getElementById('tbody');
+       //  var tbody = document.getElementById('tbody');
+        //document.getElementById('utxoTable');
+        // document.getElementById('utxoTable').getElementsByTagName('tbody')[0]; // testing new method of getting the tbody identifier without using the id because after the datatable loads, the tbody ID is lost in they cyberNets
+         // document.getElementById('tbody');
 
-        // TODO: Make it load the Datatabes ONLY AFTER the for loop has finished loading all utxos (currently using jQuery to do this after 3 seconds but it needs to only do it after it has finished.
+        // Get tbody (works upon first load and upon reloadBal() function kickoff (on an already loaded page))
+        const tableId = 'utxoTable';
+        const utxoTable = document.getElementById(tableId);
+        const tbody = utxoTable && utxoTable.querySelector('tbody');
+        // tbody null check
+        if (!tbody) {
+          console.error(`Table with ID "${tableId}" not found or does not contain a tbody element.`);
+        }
 
-        //    var tr1 = "<thead><tr><th scope='col'>TxID</th><th scope='col'>Satoshis</th><th scope='col'>Height</th><th scope='col'>Status</th></tr></thead>";
-        //   tbody.innerHTML = tr1;
-        
+        // First remove any existing table rows - other than the first (header) row. This is required when page has been loaded and reloadBal() is called.
+        const rows = utxoTable.querySelectorAll('tr');
+        if(rows.length > 1){
+          let x=0;
+          rows.forEach((row) => {
+          //  console.log(row);
+              if (x != 0) { // if it is NOT the first "header" row
+                  row.parentNode.removeChild(row); // remove it
+              }
+              x++;
+          });
+        }
+      
+        // Create & populate the UTXO Table
         for (var i = 0; i < wallet.utxos.length; i++) {
             
             let confirmed = "<i class='bi bi-info-circle me-1'></i> Pending";
@@ -405,7 +430,6 @@
         } // END DataTable UTXO HYDRATION
 
 
-
         // TODO: Create separate page for Point of Sale (PoS) system/functionality. Then use the below to essentially pause everything to wait for
         // the TX. *SEND INFO FOR THE (newly generated) ADDRESS & AMOUNT to another page with just the address & amount, which also gives a SUCCESS MSG.
 
@@ -421,7 +445,7 @@
 
 
         //  Get USD price of 1 BCH to display using the built-in price-getter from mainnet.cash library
-        // TODO: Add a dropdown to select the currency and then save that preference in localStorage.getItem('currency'); Default: USD
+        // TODO: Add a dropdown to select the base currency and then save that preference in localStorage.getItem('currency'); Default: USD
         let bchPrice = await convert(1, "bch", "usd");
         if(bchPrice){ 
           document.getElementById("bchprice").innerHTML = bchPrice;
@@ -445,7 +469,8 @@
         // Add Deposit Addr QR code to HTML.
         document.querySelector('#depositqr').src = wallet.getDepositQr().src;
         
-        // TODO: Use pubx key to generate addresses for Point of Sale page. This page could auto-generate new addresses each time funds are received. It could also send any funds recieved back to the main wallet "receive" address so they aren't lost.
+
+        // TODO: Use pubx key to generate addresses for Point of Sale page - or for secondary addresses. This page could auto-generate new addresses each time funds are received. It could also send any funds recieved back to the main wallet "receive" address so they aren't lost.
         // Use derivation path to get PubKeys to create additional recieve addresses (if needed?)
         //await wallet.getXPubKeys();
       
@@ -477,33 +502,49 @@
         document.getElementById("mnemonic").innerHTML = wallet.mnemonic;      
         document.getElementById("network").innerHTML = wallet.network;
         
-       // Watch Main Deposit Addr for any new incoming transactions // If it isn't working then the websocket connections to the spv nodes 
-       // probably timed out. Refresh the page to get new connections. 
-       console.log('Watching address for new transactions');
+        // TODO: ** Reset all utxo checkboxes / SEND BCH checkboxes (which resets the SEND BCH values)
 
-      // wallet.watchAddress((txHash) => {
-      
-      wallet.watchAddressTransactions((tx) => {
+
+       // Watch Main Deposit Addr for any new incoming transactions // If it isn't working then the websocket connections to the spv nodes 
+      // Added ReloadCounter & the below check to only watch the address on the first page load. This prevents opening unnecessary websockets when only the 1 is needed at page load.
+      if(reloadCounter === 0){  // if (it is the First page load)
+
+        // Check persistent theme dark/light mode from IndexedDB.
+        const userPrefersDark = localStorage.getItem("theme") === "dark";
+        
+        if(userPrefersDark){
+        // click the button to trigger d4rk mode if user Prefers D4rk
+          document.getElementById('darkmode').click();
+        }
+
+        console.log('Watching address for new transactions');
+        wallet.watchAddressTransactions((tx) => {
     
           let txString = JSON.stringify(tx, null, 4); 
 
           console.log('New Transaction recieved. TX Details = ' + txString);
-          // Should watch only for INCOMING TXs.
-
+          
+          // Get tx Hash
           let txHash = tx.txid;
 
           // Get all outputs
           let outputs = tx.vout;
 
           outputs.forEach(o => {
-            // if the output wallet address matches this wallet, it's a BINGO!
+            // if the output wallet address matches this wallets receive address, then it's a BINGO!
             o.scriptPubKey.addresses.forEach(a => {
               if(a === wallet.address){
               // You have received vout.value BCH
-              // TODO: add USD value based on current price.
+              // Added USD value based on current price.
               // let bchPrice = document.getElementById("bchprice").innerHTML
-                let usdval = o.value * bchPrice;
-                document.getElementById('txouts').innerHTML = '<span style="font-size:15pt;">' + o.value + ' BCH Received ($' + usdval + ').</span>';
+                let usdval = (o.value * bchPrice).toFixed(2);
+                document.getElementById('txouts').innerHTML = '<span style="font-size:15pt;">' + o.value + ' BCH ($' + usdval + ') received.</span>';
+             
+                //Show the UtxoModal & refresh bal when it is closed by user
+                document.getElementById('utxomodalbtn').click();
+             
+                // Create NOTIFICATION for new address displayed in top right of screen
+                createNotif(txHash);
               }
             })
           })
@@ -524,17 +565,11 @@
           // await Mainnet.getAddrsByXpubKey("tpubDDfazrbXYF84Xxq7XqnakjAwVyCFVUGEWrsuQY3VqzpV8QgH2X2cczoZbEAyMdRmcra4nLhf67vEZ1jSnQ2KKcq5USoTGtFGaVTsXx7XsG7","0/0",5)
 
 
-          // Create NOTIFICATION for new address displayed in top right of screen
-          createNotif(txHash);
-
-
-          //Show the UtxoModal & refresh bal when it is closed by user
-          document.getElementById('modalbtn').click();
-
        }); // End wallet.watchAddressTransactions((tx) => {
 
-      // never cancelWatch. Always keep Watching as long as page is open
 
+
+      // never cancelWatch. Always keep Watching as long as page is open
       // const cancelWatch = wallet.watchAddressTransactions((tx) => {
       //     if (tx.hash === someHash) {
       //       cancelWatch();
@@ -549,25 +584,18 @@
           // User derivation path to get PubKeys
           // await wallet.getXPubKeys()
         
-          // use PubKeys to get more Addrs
+          // use PubKeys to get more Addresses?
           // await Mainnet.getAddrsByXpubKey("tpubDDfazrbXYF84Xxq7XqnakjAwVyCFVUGEWrsuQY3VqzpV8QgH2X2cczoZbEAyMdRmcra4nLhf67vEZ1jSnQ2KKcq5USoTGtFGaVTsXx7XsG7","0/0",5)
+        
+               } // end if(reloadCounter > 0)
 
-  // FUNCTION TO WATCH UTXO CHECKBOXES AND RE-CALC TOTALS BASED ON INPUT CHANGES
-  watchUtxoCheckboxes(wallet);
-  
+            // FUNCTION TO WATCH UTXO CHECKBOXES AND RE-CALC TOTALS BASED ON INPUT CHANGES
+            watchUtxoCheckboxes(wallet);
 
-      // create dataTable
- //   let dataTable = new DataTable("#utxoTable"); 
-                    // Create DataTable.
-              //  setTimeout(function(){
-            //    const dataTable = new simpleDatatables.DataTable("#utxoTable", {
-             //       searchable: true,
-             //       fixedHeight: true,
-             //   });
-          // }, 2000);
-       //  });
+            // add to the reload counter.
+            reloadCounter++;
 
-    } // END if(wallet){}
+              } // END if(wallet){}
 
 
 
@@ -652,10 +680,28 @@
           let sendTotal = document.getElementById("send-total").value;
           let sendMax = document.getElementById("sendmax");
 
+          // bitcoincash: address pre-fix check
+          const targetString = "bitcoincash:";
+          const x = 12; // number of letters to check
+
+          if (sendToAddr.substring(0, x) === targetString) {
+            console.log("Address has bitcoincash: pre-fix, no action needed.");
+          } else {
+            console.log("Address does not have bitcoincash: pre-fix, adding it.");
+            sendToAddr = targetString + sendToAddr;
+            console.log('New sendToAddr = ' + sendToAddr);
+          }
+
           console.log('SendMax is checked? ' + sendMax.checked);
           
           // Creates new/loads existing MAINNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
-          const wallet = await Wallet.named(userid);
+          // const wallet = await Wallet.named(userid); // This is the old way.
+
+          // This is the "SEND BCH" function, we are assuming a walletId already exists in localStorage
+          let walletId = localStorage.getItem("walletId");
+          // Create the wallet.
+          const wallet = await Wallet.replaceNamed(userid, walletId);
+
 
           // if Sendmax was checked, lets just send all funds to specified address.
           if(sendMax.checked){
@@ -877,20 +923,20 @@
     function toggleDarkMode() {
       console.log('Toggling D4RK mode');
       let currentBackground = document.getElementById('main').style.background;
-      // already D4RK?
+      // if background is already D4RK...
       if(currentBackground === "black"){
-        // make it LIGHT
+        // we make it LIGHT
         document.getElementById('main').style.background = "none";
         document.getElementById('header').style.background = "white";
         document.getElementById('footer').style.background = "white";
         document.getElementById('sidebar').style.background = "white";
         document.getElementById('utxoTable').tHead.style.background = "none";
         document.getElementById('thehtml').style.background = "white";
-        //user prefers light mode;
+        //user prefers light mode; setting this in localStorage
         localStorage.setItem("theme", "light");
           //document.html.style.color = "white !important;"
           
-          var sideClasses = document.getElementsByClassName("sidebar");
+        var sideClasses = document.getElementsByClassName("sidebar");
         let sidebar = sideClasses[0]
         sidebar.style.background = "white";
         
@@ -913,7 +959,6 @@
           for (var i=0; i < navLinks.length; i++) {
             navLinks[i].style.background = "white";
           }
-          
                     
         var modals = document.getElementsByClassName("modal-content");
           for (var i=0; i < modals.length; i++) {
@@ -944,8 +989,9 @@
             accordianButtons[i].style.color = "black";
           }
           
-          // Color links again
-          colorLinks("#989898"); 
+          // Color the links again
+          colorLinks("#808287");
+          // #989898"); 
           
           // make BCH price green again
           document.getElementById('bchprice').style.color = "#198754"
@@ -1007,9 +1053,6 @@
             dropdowns[i].style.background = "black";
           }
           
-          
-          
-          
           document.getElementById('faq-modal').style.background = "black";
           
         var accordianButtons = document.getElementsByClassName("accordion-button");
@@ -1043,7 +1086,8 @@
           }
           
           // Color Links again
-          colorLinks("#989898");      
+          colorLinks("#808287");
+          //#989898");      
           
           // make BCH price green again
           document.getElementById('bchprice').style.color = "#198754"; 
@@ -1103,11 +1147,15 @@ function colorLinks(hex)
     }
 
     function hideMnemonicTab(){ 
-      document.getElementById("theMnemonic").style.display = "none" 
+      document.getElementById("theMnemonic").style.display = "none";
+      document.getElementById("showMnemonicTab").style.display = "block";
+      document.getElementById("hideMnemonicTab").style.display = "none";
     }
 
     function showMnemonicTab(){ 
-      document.getElementById("theMnemonic").style.display = "inline" 
+      document.getElementById("theMnemonic").style.display = "inline";
+      document.getElementById("hideMnemonicTab").style.display = "block";
+      document.getElementById("showMnemonicTab").style.display = "none";
     }
     
 
@@ -1115,7 +1163,11 @@ function colorLinks(hex)
     async function reloadBal() {
       console.log('Reload Balance (& UTXOs) func kicked off...');
 
-      // Get variables for sending and reset all values.
+      // Hide the confetti, the party's over.
+      document.getElementById('fettiWrapper').style.display='none';
+      //document.body.style.overflowY = "auto";
+
+      // Grab & Reset all sendBCH form values.
       let sendToAddr = document.getElementById("sendtoaddress").value;
       let sendTotal = document.getElementById("send-total").value;
       let sendMax = document.getElementById("sendmax");
@@ -1124,15 +1176,28 @@ function colorLinks(hex)
       sendTotal = null;
       sendMax.checked = false;
 
+      // Grab walletId from IndexDBStorage, since this was a "reload" function that was kicked off, the walletId should already exist.
+      let walletId = localStorage.getItem("walletId");
+
       // Creates new/loads existing MAINNET WALLET STORED IN USER BROWSER, referenced by userid set here. 
       const wallet = await Wallet.replaceNamed(userid, walletId);
       // Get Wallet Balance
       wallet.balance = await wallet.getBalance();
       // Get all UTXOs for wallet. Use this to provide UTXO selection to wallet via datatable
       wallet.utxos = await wallet.getUtxos();
+
+      // cancel old wallet listener? It will be recreated when we run loadWallet().
+      // const cancelWatch = wallet.watchAddressTransactions((tx) => {
+      //      if (tx.hash === someHash) {
+      //        cancelWatch();
+      //      }
+      //  });
+
+      // TODO: FIX ISSUE OF MULTIPLE LISTENERS (ADDRESS WATCH) BEING OPENED & NOT CLOSED.
+
       // Load the wallet and refresh/re-create the datatables. TODO: confirm this doesn't break the datatables...
       loadWallet(wallet).then( function() {
-                    // Create DataTable.
+              // Create DataTable.
               //  setTimeout(function(){
             const dataTable = new simpleDatatables.DataTable("#utxoTable", {
                     searchable: true,
@@ -1600,7 +1665,7 @@ function colorLinks(hex)
 <!--
 <hr width="65%" />
 -->
-<span style="font-size:8pt;font-style:italic;" id="linksMore" onclick="function dothis(){ document.getElementById('externalLinks').style.display = 'block'; }">External Links  + </span>
+<span style="font-size:8pt;font-style:italic;" id="linksMore" onclick="function dothis(){ document.getElementById('externalLinks').style.display = 'none'; }">External Links  + </span>
 <div id="externalLinks" >
       <li class="nav-item">
         <a class="nav-link collapsed" href="https://electroncash.org" target="_blank">
@@ -1616,7 +1681,7 @@ function colorLinks(hex)
         </a>
       </li>
       
-            <li class="nav-item">
+      <li class="nav-item">
         <a class="nav-link collapsed" href="https://paper.keepbitcoinfree.org" target="_blank">
           <i class="bi bi-wallet2"></i>
           <span>Paper BCH Wallet</span>
@@ -1633,8 +1698,164 @@ function colorLinks(hex)
 
 
   <main id="main" class="main" >
+    
+    <!-- Confetti for receiving Bitcoin Cash -->
+     <div id="fettiWrapper" class="fettiWrapper">
+      <div class="confetti-149"></div>
+      <div class="confetti-148"></div>
+      <div class="confetti-147"></div>
+      <div class="confetti-146"></div>
+      <div class="confetti-145"></div>
+      <div class="confetti-144"></div>
+      <div class="confetti-143"></div>
+      <div class="confetti-142"></div>
+      <div class="confetti-141"></div>
+      <div class="confetti-140"></div>
+      <div class="confetti-139"></div>
+      <div class="confetti-138"></div>
+      <div class="confetti-137"></div>
+      <div class="confetti-136"></div>
+      <div class="confetti-135"></div>
+      <div class="confetti-134"></div>
+      <div class="confetti-133"></div>
+      <div class="confetti-132"></div>
+      <div class="confetti-131"></div>
+      <div class="confetti-130"></div>
+      <div class="confetti-129"></div>
+      <div class="confetti-128"></div>
+      <div class="confetti-127"></div>
+      <div class="confetti-126"></div>
+      <div class="confetti-125"></div>
+      <div class="confetti-124"></div>
+      <div class="confetti-123"></div>
+      <div class="confetti-122"></div>
+      <div class="confetti-121"></div>
+      <div class="confetti-120"></div>
+      <div class="confetti-119"></div>
+      <div class="confetti-118"></div>
+      <div class="confetti-117"></div>
+      <div class="confetti-116"></div>
+      <div class="confetti-115"></div>
+      <div class="confetti-114"></div>
+      <div class="confetti-113"></div>
+      <div class="confetti-112"></div>
+      <div class="confetti-111"></div>
+      <div class="confetti-110"></div>
+      <div class="confetti-109"></div>
+      <div class="confetti-108"></div>
+      <div class="confetti-107"></div>
+      <div class="confetti-106"></div>
+      <div class="confetti-105"></div>
+      <div class="confetti-104"></div>
+      <div class="confetti-103"></div>
+      <div class="confetti-102"></div>
+      <div class="confetti-101"></div>
+      <div class="confetti-100"></div>
+      <div class="confetti-99"></div>
+      <div class="confetti-98"></div>
+      <div class="confetti-97"></div>
+      <div class="confetti-96"></div>
+      <div class="confetti-95"></div>
+      <div class="confetti-94"></div>
+      <div class="confetti-93"></div>
+      <div class="confetti-92"></div>
+      <div class="confetti-91"></div>
+      <div class="confetti-90"></div>
+      <div class="confetti-89"></div>
+      <div class="confetti-88"></div>
+      <div class="confetti-87"></div>
+      <div class="confetti-86"></div>
+      <div class="confetti-85"></div>
+      <div class="confetti-84"></div>
+      <div class="confetti-83"></div>
+      <div class="confetti-82"></div>
+      <div class="confetti-81"></div>
+      <div class="confetti-80"></div>
+      <div class="confetti-79"></div>
+      <div class="confetti-78"></div>
+      <div class="confetti-77"></div>
+      <div class="confetti-76"></div>
+      <div class="confetti-75"></div>
+      <div class="confetti-74"></div>
+      <div class="confetti-73"></div>
+      <div class="confetti-72"></div>
+      <div class="confetti-71"></div>
+      <div class="confetti-70"></div>
+      <div class="confetti-69"></div>
+      <div class="confetti-68"></div>
+      <div class="confetti-67"></div>
+      <div class="confetti-66"></div>
+      <div class="confetti-65"></div>
+      <div class="confetti-64"></div>
+      <div class="confetti-63"></div>
+      <div class="confetti-62"></div>
+      <div class="confetti-61"></div>
+      <div class="confetti-60"></div>
+      <div class="confetti-59"></div>
+      <div class="confetti-58"></div>
+      <div class="confetti-57"></div>
+      <div class="confetti-56"></div>
+      <div class="confetti-55"></div>
+      <div class="confetti-54"></div>
+      <div class="confetti-53"></div>
+      <div class="confetti-52"></div>
+      <div class="confetti-51"></div>
+      <div class="confetti-50"></div>
+      <div class="confetti-49"></div>
+      <div class="confetti-48"></div>
+      <div class="confetti-47"></div>
+      <div class="confetti-46"></div>
+      <div class="confetti-45"></div>
+      <div class="confetti-44"></div>
+      <div class="confetti-43"></div>
+      <div class="confetti-42"></div>
+      <div class="confetti-41"></div>
+      <div class="confetti-40"></div>
+      <div class="confetti-39"></div>
+      <div class="confetti-38"></div>
+      <div class="confetti-37"></div>
+      <div class="confetti-36"></div>
+      <div class="confetti-35"></div>
+      <div class="confetti-34"></div>
+      <div class="confetti-33"></div>
+      <div class="confetti-32"></div>
+      <div class="confetti-31"></div>
+      <div class="confetti-30"></div>
+      <div class="confetti-29"></div>
+      <div class="confetti-28"></div>
+      <div class="confetti-27"></div>
+      <div class="confetti-26"></div>
+      <div class="confetti-25"></div>
+      <div class="confetti-24"></div>
+      <div class="confetti-23"></div>
+      <div class="confetti-22"></div>
+      <div class="confetti-21"></div>
+      <div class="confetti-20"></div>
+      <div class="confetti-19"></div>
+      <div class="confetti-18"></div>
+      <div class="confetti-17"></div>
+      <div class="confetti-16"></div>
+      <div class="confetti-15"></div>
+      <div class="confetti-14"></div>
+      <div class="confetti-13"></div>
+      <div class="confetti-12"></div>
+      <div class="confetti-11"></div>
+      <div class="confetti-10"></div>
+      <div class="confetti-9"></div>
+      <div class="confetti-8"></div>
+      <div class="confetti-7"></div>
+      <div class="confetti-6"></div>
+      <div class="confetti-5"></div>
+      <div class="confetti-4"></div>
+      <div class="confetti-3"></div>
+      <div class="confetti-2"></div>
+      <div class="confetti-1"></div>
+      <div class="confetti-0"></div>
+    </div>
 
-<!-- if "isnew" = true this container will be displayed -->
+
+
+<!-- if ("isnew" === true) this container will be displayed -->
     <div class="container">
       <img id="beaneater" src="assets/img/beaneater.gif" style="opacity:0.6;margin-left:2em;margin-top:2em" />
      
@@ -1773,8 +1994,8 @@ function colorLinks(hex)
                     </li>
                     <li id="showMnemonicMenu"><a class="dropdown-item" onClick="showMnemonic()">Show Mnemonic</a></li>
                     <li id="hideMnemonicMenu" style="display:none;" ><a class="dropdown-item" onClick="hideMnemonic()">Hide Mnemonic</a></li>
-                    <li><a class="dropdown-item" onClick="hideMnemonicTab()">Hide this Tab</a></li>
-                    <li><a class="dropdown-item" onClick="showMnemonicTab()">Show this Tab</a></li>
+                    <li><a id="hideMnemonicTab" class="dropdown-item" onClick="hideMnemonicTab()">Hide this Tab</a></li>
+                    <li><a id="showMnemonicTab" style="display:none;" class="dropdown-item" onClick="showMnemonicTab()">Show this Tab</a></li>
                     <li><a class="dropdown-item" onClick="deleteWallet()">DELETE this wallet </a></li>
                  <!--   <li><a class="dropdown-item" href="#">This Month</a></li>
                     <li><a class="dropdown-item" href="#">This Year</a></li> -->
@@ -1934,8 +2155,8 @@ function colorLinks(hex)
                         <div class="form-floating">
                           <input type="text" class="form-control" id="sendtoaddress" required>
                           <label for="sendtoaddress">Send to Address</label>
-                          <span style="" id="sendtoaddresserror"></span>
-                            <div style="" class="invalid-feedback">
+                          <span id="sendtoaddresserror"></span>
+                            <div class="invalid-feedback">
                               Please enter a valid bitcoincash: Address.
                             </div>
                         </div>
@@ -2176,10 +2397,17 @@ function colorLinks(hex)
 </div>
 
 <!-- MODALS -->
-                     <!-- Basic Modal style="display:none;" -->
-                     <button style="display:none;" id="modalbtn" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#utxoModal">
+                     <!-- NEW UTXO Modal -- style="display:none;" -->
+                     <button style="display:none;" onclick="document.getElementById('fettiWrapper').style.display='block'; window.location.href='#';" id="utxomodalbtn" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#utxoModal">
                       Test Incoming Transaction
                     </button>
+
+                    <!-- TEST TO RELOAD BAL & UTXOS BY RUNNING the reloadBal() function  -- style="display:none;" -->
+                    <button style="display:none;" onclick="reloadBal()" id="reloadbalbtn" type="button" class="btn btn-primary">
+                      Test ReloadBal()
+                    </button>
+
+
 <!--
                     <button style="display:none;" onClick="createNotif()" id="notificationbtn" type="button" class="btn btn-primary">
                       Test Notification
@@ -2189,16 +2417,13 @@ function colorLinks(hex)
                       <div class="modal-dialog">
                         <div class="modal-content" data-bs-backdrop="false">
                           <div class="modal-header">
-                            <h5 id="txdetectheader" class="modal-title">New TXID Detected</h5>
+                            <h5 id="txdetectheader" class="modal-title">Deposit Received!</h5>
                             <button type="button" class="btn-close" onClick="reloadBal()" data-bs-dismiss="modal" aria-label="Close"></button>
                           </div>
                           <div id="txdetectbody" class="modal-body">
-                            A new transaction has been detected for your Deposit Address - <span id="cashaddr2"></span>.  The TX Hash is <span id="txhash">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>.<br /><br />
-
-                            <span id="txouts"></span>
-                          
-  
-                          
+                            <span id="txouts"></span> <br /><br />
+                            Transaction detected for deposit address - <span id="cashaddr2"></span>.  <br />
+                            TX Hash is <span id="txhash">xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx</span>.<br />
                           </div>
 
 
@@ -2214,7 +2439,7 @@ function colorLinks(hex)
 
                     <!-- Basic Modal button that is hidden. style="display:none;" --> 
                     <button style="display:none;" id="faqmodalbtn" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#FAQModal">
-                      Test FAQ Modal
+                      <!-- Trigger FAQ Modal --> FAQ Modal
                     </button> 
                     
                     <div class="modal fade" id="FAQModal" tabindex="-1">
@@ -2264,7 +2489,7 @@ function colorLinks(hex)
                               </h2>
                               <div id="faqsOne-3" class="accordion-collapse collapse" data-bs-parent="#faq-group-1">
                                 <div class="accordion-body">
-                                  <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">The BCH Admin code is open source so you can verify what the code is doing</a>. The website itself is serverless (zero backend code) and only uses HTML, CSS & <i>clearly written, albeit a bit sloppy,</i> client-side JavaScript: utilizing the <a href="https://mainnet.cash" target="_blank">mainnet-js library/scripts</a> to interact with the Bitcoin Cash blockchain and store the private keys within the Browser's IndexDB Storage. There is no malicious code that I am aware of within the index.html, or included JavaScript assets. Everyone is welcome to review the source code to confirm that. <br /><br />BCH Admin uses an SSL certificate to encrypt communications on the website and mainnetjs essentially opens a websocket to a Bitcoin Cash node within your browser (whereas Electron Cash does this within the electron desktop application). You can also easily download the source code and host the wallet locally. The code still reaches out to third party nodes to verify tx data and broadcast transactions. The private keys used to sign transactions do not ever leave your browser's local storage and are not saved anywhere else. 
+                                  <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">The BCH Admin code is open source so you can verify what the code is doing</a>. The website itself is serverless (zero backend code) and only uses HTML, CSS & <i>clearly written, albeit a bit sloppy,</i> client-side JavaScript: utilizing the <a href="https://mainnet.cash" target="_blank">mainnet-js library/scripts</a> to interact with the Bitcoin Cash blockchain and store the private keys within the Browser's IndexDB Storage. There is no malicious code that I am aware of within the index.html, or included JavaScript assets. <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">Everyone is welcome to review the source code to confirm that.</a><br /><br />BCH Admin uses an SSL certificate to encrypt communications on the website and mainnetjs essentially opens a websocket to a Bitcoin Cash node within your browser (whereas Electron Cash does this within the electron desktop application). You can also easily download the source code and host the wallet locally. The code still reaches out to third party nodes to verify tx data and broadcast transactions. The private keys used to sign transactions do not ever leave your browser's local storage and are not saved anywhere else. 
                                   <br /><br />
                                   * Please note that this software is offered AS IS with NO GAURANTEE that your funds will be safe. WE (https://KeepBitcoinFree.org) DOES NOT EVER HOLD YOUR PRIVATE KEYS; WE CANNOT, AND DO NOT WISH TO, STEAL YOUR Bitcoin Cash, BCH. This application is serverless, all keys are stored in your browser. Back up your seed phrase and derivation to restore your coins on any other Bitcoin Cash wallet.
                                 </div>
@@ -2280,7 +2505,8 @@ function colorLinks(hex)
                         </div>
                       </div>
                     </div><!-- End Basic Modal-->
-                    
+
+                   
                     </div>
 
                     <!-- END MODAL-->
@@ -2290,7 +2516,7 @@ function colorLinks(hex)
   <!-- ======= Footer ======= -->
   <footer id="footer" class="footer">
     <div class="copyright">
-      <strong><span><a href="https://KeepBitcoinFree.org" target="_blank">KeepBitcoinFree.org</a></span></strong> | <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">Fork me.</a> | <a href="https://mainnet.cash/tutorial" target="_blank">mainnet-2.3.13.js</a>
+      <strong><span><a href="https://KeepBitcoinFree.org" target="_blank">KeepBitcoinFree.org</a></span></strong> | <a href="https://github.com/KeepBitcoinFree-org/bch-admin" target="_blank">Fork off ;)</a> | <a href="https://mainnet.cash/tutorial" target="_blank">mainnet-2.5.0.js</a>
     </div>
   <!--  <div class="credits">
       null.
